@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s256
+package vrf
 
 import (
 	"fmt"
@@ -59,7 +59,7 @@ func TestVRF(t *testing.T) {
 func TestVRF0(t *testing.T) {
 	start := time.Now()
 	var wg sync.WaitGroup
-	for i:=0;i<20000;i++{
+	for i := 0; i < 60000; i++ {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()

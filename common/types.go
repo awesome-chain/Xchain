@@ -48,16 +48,18 @@ func BytesToHash(b []byte) Hash {
 	return h
 }
 func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
-func HexToHash(s string) Hash   {
-	s =hexutil.CPToHex(s)
-	return BytesToHash(FromHex(s)) }
+func HexToHash(s string) Hash {
+	s = hexutil.CPToHex(s)
+	return BytesToHash(FromHex(s))
+}
 
 // Get the string representation of the underlying hash
 func (h Hash) Str() string   { return string(h[:]) }
 func (h Hash) Bytes() []byte { return h[:] }
 func (h Hash) Big() *big.Int { return new(big.Int).SetBytes(h[:]) }
-func (h Hash) Hex() string   { s := hexutil.Encode(h[:])
-return hexutil.HexToCP(s)
+func (h Hash) Hex() string {
+	s := hexutil.Encode(h[:])
+	return hexutil.HexToCP(s)
 }
 
 // TerminalString implements log.TerminalStringer, formatting a string for console

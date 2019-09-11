@@ -247,7 +247,7 @@ func TestMultiResolver(t *testing.T) {
 	ethResolve := newTestResolver(ethHash)
 
 	testAddr := "swarm.test"
-	testHash := hexutil.CustomHexPrefix +"1111111111111111111111111111111111111111111111111111111111111111"
+	testHash := hexutil.CustomHexPrefix + "1111111111111111111111111111111111111111111111111111111111111111"
 	testResolve := newTestResolver(testHash)
 
 	tests := []struct {

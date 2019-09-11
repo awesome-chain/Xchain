@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package p256 implements a verifiable random function using curve p256.
-package s256
+package vrf
 
 // Discrete Log based VRF from Appendix A of CONIKS:
 // http://www.jbonneau.com/doc/MBBFF15-coniks.pdf
