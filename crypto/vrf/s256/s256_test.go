@@ -15,7 +15,11 @@
 package s256
 
 import (
+	"fmt"
+	"github.com/magiconair/properties/assert"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestVRF(t *testing.T) {
@@ -50,4 +54,26 @@ func TestVRF(t *testing.T) {
 			t.Errorf("ProofToInex(%s, %x): %x, want %x", tc.m, tc.proof, got, want)
 		}
 	}
+}
+
+func TestVRF0(t *testing.T) {
+	start := time.Now()
+	var wg sync.WaitGroup
+	for i:=0;i<20000;i++{
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			k, pk := GenerateKey()
+			m := []byte("data1")
+			output, proof := k.Evaluate(m)
+			output1, err := pk.ProofToHash(m, proof)
+			if err != nil {
+				t.Error(err)
+			}
+			assert.Equal(t, output, output1, "not equal")
+		}()
+	}
+	wg.Wait()
+	end := time.Now()
+	fmt.Println(end.Sub(start))
 }

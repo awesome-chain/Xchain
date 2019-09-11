@@ -29,14 +29,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
-	"crypto/x509"
 	"encoding/binary"
-	"encoding/pem"
 	"errors"
 	"github.com/awesome-chain/Xchain/crypto/secp256k1"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"math/big"
-
-	"github.com/google/keytransparency/core/crypto/vrf"
 )
 
 var (
@@ -215,69 +212,7 @@ func (pk *PublicKey) ProofToHash(m, proof []byte) (index [32]byte, err error) {
 	return sha256.Sum256(vrf), nil
 }
 
-// NewVRFSigner creates a signer object from a private key.
-func NewVRFSigner(key *ecdsa.PrivateKey) (vrf.PrivateKey, error) {
-	if *(key.Params()) != *curve.Params() {
-		return nil, ErrPointNotOnCurve
-	}
-	if !curve.IsOnCurve(key.X, key.Y) {
-		return nil, ErrPointNotOnCurve
-	}
-	return &PrivateKey{PrivateKey: key}, nil
-}
-
 // Public returns the corresponding public key as bytes.
 func (k PrivateKey) Public() crypto.PublicKey {
 	return &k.PublicKey
-}
-
-// NewVRFVerifier creates a verifier object from a public key.
-func NewVRFVerifier(pubkey *ecdsa.PublicKey) (vrf.PublicKey, error) {
-	if *(pubkey.Params()) != *curve.Params() {
-		return nil, ErrPointNotOnCurve
-	}
-	if !curve.IsOnCurve(pubkey.X, pubkey.Y) {
-		return nil, ErrPointNotOnCurve
-	}
-	return &PublicKey{PublicKey: pubkey}, nil
-}
-
-// NewVRFSignerFromPEM creates a vrf private key from a PEM data structure.
-func NewVRFSignerFromPEM(b []byte) (vrf.PrivateKey, error) {
-	p, _ := pem.Decode(b)
-	if p == nil {
-		return nil, ErrNoPEMFound
-	}
-	return NewVRFSignerFromRawKey(p.Bytes)
-}
-
-// NewVRFSignerFromRawKey returns the private key from a raw private key bytes.
-func NewVRFSignerFromRawKey(b []byte) (vrf.PrivateKey, error) {
-	k, err := x509.ParseECPrivateKey(b)
-	if err != nil {
-		return nil, err
-	}
-	return NewVRFSigner(k)
-}
-
-// NewVRFVerifierFromPEM creates a vrf public key from a PEM data structure.
-func NewVRFVerifierFromPEM(b []byte) (vrf.PublicKey, error) {
-	p, _ := pem.Decode(b)
-	if p == nil {
-		return nil, ErrNoPEMFound
-	}
-	return NewVRFVerifierFromRawKey(p.Bytes)
-}
-
-// NewVRFVerifierFromRawKey returns the public key from a raw public key bytes.
-func NewVRFVerifierFromRawKey(b []byte) (vrf.PublicKey, error) {
-	k, err := x509.ParsePKIXPublicKey(b)
-	if err != nil {
-		return nil, err
-	}
-	pk, ok := k.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, ErrWrongKeyType
-	}
-	return NewVRFVerifier(pk)
 }
