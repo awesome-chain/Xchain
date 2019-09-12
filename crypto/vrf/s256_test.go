@@ -16,7 +16,6 @@ package vrf
 
 import (
 	"fmt"
-	"github.com/magiconair/properties/assert"
 	"sync"
 	"testing"
 	"time"
@@ -59,18 +58,23 @@ func TestVRF(t *testing.T) {
 func TestVRF0(t *testing.T) {
 	start := time.Now()
 	var wg sync.WaitGroup
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 100; i++ {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
 			k, pk := GenerateKey()
-			m := []byte("data1")
-			output, proof := k.Evaluate(m)
+			m := []byte("data1sdasfd")
+			_, proof := k.Evaluate(m)
+			//fmt.Println(len(proof))
+			//fmt.Println(len(output))
+			m = []byte("data1sdafd")
 			output1, err := pk.ProofToHash(m, proof)
 			if err != nil {
 				t.Error(err)
 			}
-			assert.Equal(t, output, output1, "not equal")
+			fmt.Println(output1)
+			fmt.Println(len(output1))
+			//assert.Equal(t, output, output1, "not equal")
 		}()
 	}
 	wg.Wait()

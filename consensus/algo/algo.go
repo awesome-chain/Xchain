@@ -43,7 +43,7 @@ func (a *Algorand) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 	//	return nil, nil
 	//case <-time.After(delay):
 	//}
-	hash := HashHeader(header)
+	hash := hashHeader(header)
 	sig, err := signFn(accounts.Account{Address: signer}, hash.Bytes())
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (a *Algorand) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 }
 
 
-func HashHeader(h *types.Header) common.Hash {
+func hashHeader(h *types.Header) common.Hash {
 	return rlpHash([]interface{}{
 		h.ParentHash,
 		h.UncleHash,

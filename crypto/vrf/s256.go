@@ -55,6 +55,9 @@ type PublicKey struct {
 	*ecdsa.PublicKey
 }
 
+type Output [32]byte
+type Proof []byte
+
 // PrivateKey holds a private VRF key.
 type PrivateKey struct {
 	*ecdsa.PrivateKey
