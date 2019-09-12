@@ -74,6 +74,7 @@ type Header struct {
 	Root        common.Hash    `json:"stateRoot"        gencodec:"required"`
 	TxHash      common.Hash    `json:"transactionsRoot" gencodec:"required"`
 	ReceiptHash common.Hash    `json:"receiptsRoot"     gencodec:"required"`
+	Seed        common.Seed    `json:"seed"     		gencodec:"required"`
 	Bloom       Bloom          `json:"logsBloom"        gencodec:"required"`
 	Difficulty  *big.Int       `json:"difficulty"       gencodec:"required"`
 	Number      *big.Int       `json:"number"           gencodec:"required"`
@@ -83,6 +84,7 @@ type Header struct {
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
 	MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
 	Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`
+	Sig         []byte         `json:"sig"				gencodec:"required"`
 }
 
 // field type overrides for gencodec

@@ -32,7 +32,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/awesome-chain/Xchain/crypto/secp256k1"
-	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"math/big"
 )
 
@@ -62,7 +61,7 @@ type PrivateKey struct {
 }
 
 // GenerateKey generates a fresh keypair for this VRF
-func GenerateKey() (vrf.PrivateKey, vrf.PublicKey) {
+func GenerateKey() (*PrivateKey, *PublicKey) {
 	key, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {
 		return nil, nil
