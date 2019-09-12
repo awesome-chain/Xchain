@@ -41,6 +41,7 @@ var (
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
+type Seed [HashLength]byte
 
 func BytesToHash(b []byte) Hash {
 	var h Hash
