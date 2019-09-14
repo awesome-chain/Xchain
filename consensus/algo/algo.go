@@ -21,9 +21,9 @@ type SignTxFn func(accounts.Account, *types.Transaction, *big.Int) (*types.Trans
 // Algorand is the pure-proof-of-stake consensus engine.
 type Algorand struct {
 	sync.RWMutex
-	signer     common.Address
-	signFn     SignerFn            // Signer function to authorize hashes with
-	signTxFn   SignTxFn            // Sign transaction function to sign tx
+	signer   common.Address
+	signFn   SignerFn // Signer function to authorize hashes with
+	signTxFn SignTxFn // Sign transaction function to sign tx
 }
 
 // Seal implements consensus.Engine, attempting to create a sealed block using
@@ -51,7 +51,6 @@ func (a *Algorand) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 	header.Sig = sig
 	return block.WithSeal(header), nil
 }
-
 
 func hashHeader(h *types.Header) common.Hash {
 	return rlpHash([]interface{}{

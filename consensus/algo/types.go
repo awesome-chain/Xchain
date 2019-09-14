@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	emptyOutput = vrf.Output{0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,}//0x0000000000000000000000000000000000000000000000000000000000000000
+	emptyOutput = vrf.Output{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} //0x0000000000000000000000000000000000000000000000000000000000000000
 )
 
 type BlockValidator interface {
@@ -53,7 +53,7 @@ type BlockValidator interface {
 	// it accepts.
 	//
 	// TODO There should probably be a second Round argument here.
-	Validate(context.Context, types.Block) (ValidatedBlock, error)
+	Validate(context.Context, *types.Block) (*types.Block, error)
 }
 
 // Hashable is an interface implemented by an object that can be represented
@@ -67,19 +67,3 @@ func hashRep(h Hashable) []byte {
 	hashid, data, _ := h.ToBeHashed()
 	return append([]byte(hashid), data...)
 }
-
-// A ValidatedBlock represents an Block that has been successfuly validated
-// and can now be recorded in the ledger.  This is an optimized version of
-// calling EnsureBlock() on the Ledger.
-type ValidatedBlock interface {
-	// WithSeed creates a copy of this ValidatedBlock with its
-	// cryptographically random seed set to the given value.
-	//
-	// Calls to Seed() or to Digest() on the copy's Block must
-	// reflect the value of the new seed.
-	WithSeed(common.Seed) ValidatedBlock
-
-	// Block returns the underlying block that has been validated.
-	Block() types.Block
-}
-
