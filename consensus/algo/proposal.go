@@ -72,13 +72,13 @@ type Proposal struct {
 	ve *types.Block
 }
 
-func MakeProposal(ve *types.Block, pf []byte, origPer uint64, origProp common.Address) *Proposal {
-	var payload UnauthenticatedProposal
-	payload.Block = ve
+func MakeProposal(b *types.Block, pf []byte, origPer uint64, origProp common.Address) *Proposal {
+	payload := &UnauthenticatedProposal{}
+	payload.Block = b
 	payload.SeedProof = pf
 	payload.OriginalPeriod = origPer
 	payload.OriginalProposer = origProp
-	return &Proposal{UnauthenticatedProposal: &payload, ve: ve}
+	return &Proposal{UnauthenticatedProposal: payload, ve: b}
 }
 
 func (p *Proposal) U() *UnauthenticatedProposal {

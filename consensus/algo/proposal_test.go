@@ -45,9 +45,6 @@ func TestProposal(t *testing.T) {
 		t.Fatal(err)
 	}
 	header.Sig = sig
-	//pub, err := crypto.SigToPub(hash[:], sig)
-	//fmt.Print(pub)
-
 	b := types.NewBlock(header, nil, nil, nil)
 	p := MakeProposal(b, seedProof[:], 0, address)
 	VerifyNewSeed(p.UnauthenticatedProposal, chain)
