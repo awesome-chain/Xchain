@@ -2,7 +2,6 @@ package algo
 
 import (
 	"context"
-	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 	"github.com/awesome-chain/Xchain/core/types"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
