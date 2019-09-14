@@ -155,15 +155,14 @@ func VerifyNewSeed(p *UnauthenticatedProposal, ledger consensus.ChainReader) err
 
 	if value.OriginalPeriod == 0 {
 		sig := p.Block.Header().Sig
-		hash := hashHeader(p.Block.Header())
+		hash := HashHeader(p.Block.Header())
 		pubKeyBS, err := crypto.Ecrecover(hash[:], sig)
 		if err != nil {
 			return fmt.Errorf("retrieve public key error: [%v]", err)
 		}
 		pubKey := crypto.ToECDSAPub(pubKeyBS)
-		vrfPubKey := vrf.PublicKey{
-			pubKey,
-		}
+		var vrfPubKey vrf.PublicKey
+		vrfPubKey.PublicKey = pubKey
 		output, err := vrfPubKey.ProofToHash(prevSeed[:], p.SeedProof)
 		if err != nil {
 			return fmt.Errorf("verify proof error: [%v]", err)
