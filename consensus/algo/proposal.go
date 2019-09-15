@@ -63,7 +63,7 @@ func (p *UnauthenticatedProposal) seed() common.Seed {
 
 // A proposal is an Block along with everything needed to validate it.
 type Proposal struct {
-	*UnauthenticatedProposal
+	UnauthenticatedProposal
 
 	// ve stores an optional ValidatedBlock representing this block.
 	// This allows us to avoid re-computing the state delta when
@@ -74,16 +74,17 @@ type Proposal struct {
 }
 
 func MakeProposal(b *types.Block, pf []byte, origPer uint64, origProp *ecdsa.PublicKey) *Proposal {
-	payload := &UnauthenticatedProposal{}
-	payload.Block = b
-	payload.SeedProof = pf
-	payload.OriginalPeriod = origPer
-	payload.OriginalProposer = crypto.FromECDSAPub(origProp)
-	return &Proposal{UnauthenticatedProposal: payload, ve: b}
+	p := &Proposal{}
+	p.Block = b
+	p.SeedProof = pf
+	p.OriginalPeriod = origPer
+	p.OriginalProposer = crypto.FromECDSAPub(origProp)
+	p.ve = b
+	return p
 }
 
 func (p *Proposal) U() *UnauthenticatedProposal {
-	return p.UnauthenticatedProposal
+	return &p.UnauthenticatedProposal
 }
 
 // A proposerSeed is a Hashable input to proposer seed derivation.

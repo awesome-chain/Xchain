@@ -47,6 +47,6 @@ func TestProposal(t *testing.T) {
 	//header.Sig = sig
 	b := types.NewBlock(header, nil, nil, nil)
 	p := MakeProposal(b, seedProof[:], 0, &key.PublicKey)
-	VerifyNewSeed(p.UnauthenticatedProposal, chain)
+	VerifyNewSeed(&p.UnauthenticatedProposal, chain)
 	defer chain.Stop()
 }

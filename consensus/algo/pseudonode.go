@@ -2,8 +2,13 @@ package algo
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"github.com/awesome-chain/Xchain/consensus"
+	"github.com/awesome-chain/Xchain/core/types"
+	"github.com/awesome-chain/Xchain/crypto"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
+	"math/big"
 	"sync"
 	"time"
 )
@@ -64,6 +69,28 @@ func (n *AsyncPseudoNode) MakeProposals(ctx context.Context, r uint64, p uint64)
 	}
 }
 
+// makeProposals creates a slice of block proposals for the given round and period.
+func (n *AsyncPseudoNode) makeProposals(round uint64, period uint64, sk *ecdsa.PrivateKey) []*Proposal {
+	//deadline := time.Now().Add(AssemblyTime)
+	proposals := make([]*Proposal, 0)
+	address := crypto.PubkeyToAddress(sk.PublicKey)
+	newSeed, seedProof, err := DeriveNewSeed(address, &vrf.PrivateKey{sk}, round, period, n.ledger)
+	if err != nil {
+		return nil
+	}
+	header := &types.Header{
+		Coinbase: address,
+		Number:   new(big.Int).SetUint64(round),
+	}
+	header.Seed = newSeed
+	b := types.NewBlock(header, nil, nil, nil)
+	p := MakeProposal(b, seedProof[:], 0, &sk.PublicKey)
+	// create the block proposal
+	proposals = append(proposals, p)
+	return proposals
+}
+
+
 func (n *AsyncPseudoNode) makeProposalsTask(ctx context.Context, r uint64, p uint64) *PseudoNodeProposalsTask {
 	pt := &PseudoNodeProposalsTask{
 		PseudoNodeBaseTask: PseudoNodeBaseTask{
@@ -79,6 +106,11 @@ func (n *AsyncPseudoNode) makeProposalsTask(ctx context.Context, r uint64, p uin
 
 func (t *PseudoNodeProposalsTask) execute(verifier *AsyncVoteVerifier, quit chan struct{}) {
 	defer t.close()
+	// check to see if task already expired.
+	//if t.context.Err() != nil {
+	//	return
+	//}
+	//payloads, votes := t.node.makeProposals(t.round, t.period, t.participation)
 	return
 }
 
