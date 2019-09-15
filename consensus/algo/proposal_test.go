@@ -39,14 +39,14 @@ func TestProposal(t *testing.T) {
 		t.Fatal(err)
 	}
 	header.Seed = newSeed
-	hash := header.HashNoSig()
-	sig, err := crypto.Sign(hash[:], vrfSK.PrivateKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	header.Sig = sig
+	//hash := header.HashNoSig()
+	//sig, err := crypto.Sign(hash[:], vrfSK.PrivateKey)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//header.Sig = sig
 	b := types.NewBlock(header, nil, nil, nil)
-	p := MakeProposal(b, seedProof[:], 0, address)
+	p := MakeProposal(b, seedProof[:], 0, &key.PublicKey)
 	VerifyNewSeed(p.UnauthenticatedProposal, chain)
 	defer chain.Stop()
 }

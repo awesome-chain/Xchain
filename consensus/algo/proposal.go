@@ -2,6 +2,7 @@ package algo
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus"
@@ -18,7 +19,7 @@ import (
 // its proposer, and the period in which it was proposed.
 type ProposalValue struct {
 	OriginalPeriod   uint64
-	OriginalProposer common.Address
+	OriginalProposer []byte
 	BlockDigest      common.Hash
 	EncodingDigest   common.Hash
 }
@@ -28,7 +29,7 @@ type UnauthenticatedProposal struct {
 	*types.Block
 	SeedProof        []byte
 	OriginalPeriod   uint64
-	OriginalProposer common.Address
+	OriginalProposer []byte
 }
 
 // ToBeHashed implements the Hashable interface.
@@ -72,12 +73,12 @@ type Proposal struct {
 	ve *types.Block
 }
 
-func MakeProposal(b *types.Block, pf []byte, origPer uint64, origProp common.Address) *Proposal {
+func MakeProposal(b *types.Block, pf []byte, origPer uint64, origProp *ecdsa.PublicKey) *Proposal {
 	payload := &UnauthenticatedProposal{}
 	payload.Block = b
 	payload.SeedProof = pf
 	payload.OriginalPeriod = origPer
-	payload.OriginalProposer = origProp
+	payload.OriginalProposer = crypto.FromECDSAPub(origProp)
 	return &Proposal{UnauthenticatedProposal: payload, ve: b}
 }
 
@@ -154,12 +155,7 @@ func VerifyNewSeed(p *UnauthenticatedProposal, ledger consensus.ChainReader) err
 	prevSeed := prevHeader.Seed
 
 	if value.OriginalPeriod == 0 {
-		sig := p.Block.Header().Sig
-		hash := p.Block.Header().HashNoSig()
-		pubKey, err := crypto.SigToPub(hash[:], sig)
-		if err != nil {
-			return err
-		}
+		pubKey := crypto.ToECDSAPub(p.OriginalProposer)
 		var vrfPubKey vrf.PublicKey
 		vrfPubKey.PublicKey = pubKey
 		output, err := vrfPubKey.ProofToHash(prevSeed[:], p.SeedProof[:])
@@ -170,7 +166,7 @@ func VerifyNewSeed(p *UnauthenticatedProposal, ledger consensus.ChainReader) err
 			return fmt.Errorf("verify failed: [%v]", output)
 		}
 		alpha = HashObj(&ProposerSeed{
-			Addr: p.OriginalProposer,
+			Addr: crypto.PubkeyToAddress(*pubKey),
 			VRF:  output,
 		})
 	} else {
@@ -183,17 +179,6 @@ func VerifyNewSeed(p *UnauthenticatedProposal, ledger consensus.ChainReader) err
 		return fmt.Errorf("payload seed malformed (%v != %v)", common.Seed(HashObj(&input)), p.Seed())
 	}
 	return nil
-}
-
-func ProposalForBlock(address common.Address, vrfSK *vrf.PrivateKey, ve *types.Block, pf []byte, period uint64, ledger consensus.ChainReader) (*Proposal, *ProposalValue, error) {
-	proposal := MakeProposal(ve, pf, period, address)
-	value := &ProposalValue{
-		OriginalPeriod:   period,
-		OriginalProposer: address,
-		BlockDigest:      proposal.Block.Hash(),
-		EncodingDigest:   HashObj(proposal),
-	}
-	return proposal, value, nil
 }
 
 // Validate returns true if the proposal is valid.
@@ -214,6 +199,6 @@ func (p UnauthenticatedProposal) Validate(ctx context.Context, current uint64, l
 	if err != nil {
 		return nil, fmt.Errorf("EntryValidator rejected entry: %v", err)
 	}
-
-	return MakeProposal(ve, p.SeedProof, p.OriginalPeriod, p.OriginalProposer), nil
+	pubKey := crypto.ToECDSAPub(p.OriginalProposer)
+	return MakeProposal(ve, p.SeedProof, p.OriginalPeriod, pubKey), nil
 }
