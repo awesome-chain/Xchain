@@ -5,6 +5,7 @@ import (
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 	"github.com/awesome-chain/Xchain/core/types"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
+	"time"
 )
 
 // Round represents a protocol round index
@@ -37,6 +38,26 @@ const (
 var (
 	emptyOutput = vrf.Output{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} //0x0000000000000000000000000000000000000000000000000000000000000000
 )
+
+type BlockFactory interface {
+	// AssembleBlock produces a new ValidatedBlock which is suitable for proposal
+	// at a given Round.  The time argument specifies a target deadline by
+	// which the block should be produced.  Specifically, the deadline can
+	// cause the factory to add fewer transactions to the block in question
+	// than might otherwise be possible.
+	//
+	// AssembleBlock should produce a ValidatedBlock for which the corresponding
+	// BlockValidator validates (i.e. for which BlockValidator.Validate
+	// returns true). If an insufficient number of nodes can assemble valid
+	// entries, the agreement protocol may lose liveness.
+	//
+	// AssembleBlock may return an error if the BlockFactory is unable to
+	// produce a ValidatedBlock for the given round. If an insufficient number of
+	// nodes on the network can assemble entries, the agreement protocol may
+	// lose liveness.
+	AssembleBlock(uint64, time.Time) (*types.Block, error)
+}
+
 
 type BlockValidator interface {
 	// Validate must return an error if a given Block cannot be determined
