@@ -19,6 +19,7 @@ package algo
 import (
 	"context"
 	"fmt"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"sync"
 	"time"
 
@@ -72,6 +73,7 @@ type asyncPseudonode struct {
 	factory   BlockFactory
 	validator BlockValidator
 	keys      KeyManager
+	key       *vrf.PrivateKey
 	ledger    Ledger
 	log       serviceLogger
 	quit      chan struct{}   // a quit signal for the verifier goroutines
@@ -93,6 +95,7 @@ type pseudonodeBaseTask struct {
 	context       context.Context // the context associated with that task; context might expire for a single task but remain valid for others.
 	out           chan externalEvent
 	participation []account.Participation
+	key           *vrf.PrivateKey
 }
 
 type pseudonodeVotesTask struct {
@@ -117,11 +120,12 @@ type pseudonodeVerifier struct {
 
 type verifiedCryptoResults []asyncVerifyVoteResponse
 
-func makePseudonode(factory BlockFactory, validator BlockValidator, keys KeyManager, ledger Ledger, voteVerifier *AsyncVoteVerifier, log serviceLogger) pseudonode {
+func makePseudonode(factory BlockFactory, validator BlockValidator, keys KeyManager, k *vrf.PrivateKey, ledger Ledger, voteVerifier *AsyncVoteVerifier, log serviceLogger) pseudonode {
 	pn := asyncPseudonode{
 		factory:   factory,
 		validator: validator,
 		keys:      keys,
+		key:       k,
 		ledger:    ledger,
 		log:       log,
 		quit:      make(chan struct{}),
@@ -191,6 +195,7 @@ func (n asyncPseudonode) makeProposalsTask(ctx context.Context, r round, p perio
 			context:       ctx,
 			participation: participation,
 			out:           make(chan externalEvent),
+			key:           n.key,
 		},
 		round:  r,
 		period: p,
@@ -210,6 +215,7 @@ func (n asyncPseudonode) makeVotesTask(ctx context.Context, r round, p period, s
 			context:       ctx,
 			participation: participation,
 			out:           make(chan externalEvent),
+			key:           n.key,
 		},
 		round:            r,
 		period:           p,

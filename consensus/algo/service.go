@@ -19,6 +19,7 @@ package algo
 //go:generate dbgen -i agree.sql -p agreement -n agree -o agreeInstall.go
 import (
 	"context"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"time"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
@@ -36,6 +37,7 @@ const (
 type Service struct {
 	parameters
 
+	key *vrf.PrivateKey
 	// for exiting
 	quit   chan struct{}
 	done   chan struct{}
@@ -87,10 +89,11 @@ type externalDemuxSignals struct {
 // MakeService creates a new Agreement Service instance given a set of Parameters.
 //
 // Call Start to start execution and Shutdown to finish execution.
-func MakeService(p Parameters) *Service {
+func MakeService(p Parameters, k *vrf.PrivateKey) *Service {
 	s := new(Service)
 
 	s.parameters = parameters(p)
+	s.key = k
 
 	s.log = serviceLogger{Logger: p.Logger}
 
@@ -104,7 +107,7 @@ func MakeService(p Parameters) *Service {
 
 	s.voteVerifier = MakeAsyncVoteVerifier(s.BacklogPool)
 	s.demux = makeDemux(s.Network, s.Ledger, s.BlockValidator, s.voteVerifier, s.EventsProcessingMonitor, s.log)
-	s.loopback = makePseudonode(s.BlockFactory, s.BlockValidator, s.KeyManager, s.Ledger, s.voteVerifier, s.log)
+	s.loopback = makePseudonode(s.BlockFactory, s.BlockValidator, s.KeyManager, s.key, s.Ledger, s.voteVerifier, s.log)
 	s.persistenceLoop = makeAsyncPersistenceLoop(s.log, s.Accessor, s.Ledger)
 
 	return s
