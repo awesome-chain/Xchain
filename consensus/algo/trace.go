@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/algorand/go-algorand/config"
-	"github.com/algorand/go-algorand/logging"
-	"github.com/algorand/go-algorand/logging/logspec"
-	"github.com/algorand/go-algorand/logging/telemetryspec"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging/logspec"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging/telemetryspec"
 )
 
 type traceLevel int

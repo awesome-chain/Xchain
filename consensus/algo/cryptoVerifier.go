@@ -20,8 +20,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/algorand/go-algorand/logging"
-	"github.com/algorand/go-algorand/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 // TODO put these in config

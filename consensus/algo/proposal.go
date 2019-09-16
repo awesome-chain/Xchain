@@ -19,13 +19,13 @@ package agreement
 import (
 	"context"
 	"fmt"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
 
 	"github.com/algorand/go-algorand/crypto"
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/data/bookkeeping"
 	"github.com/algorand/go-algorand/data/committee"
-	"github.com/algorand/go-algorand/logging"
-	"github.com/algorand/go-algorand/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 var bottom proposalValue

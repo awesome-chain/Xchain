@@ -17,7 +17,7 @@
 package agreement
 
 import (
-	"github.com/algorand/go-algorand/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 )
 
 // A voteTrackerPeriod is a voteMachinePeriod which indicates whether a

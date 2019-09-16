@@ -17,7 +17,7 @@
 package agreement
 
 import (
-	"github.com/algorand/go-algorand/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 )
 
 // A listener is a state machine which can handle events, returning new events.

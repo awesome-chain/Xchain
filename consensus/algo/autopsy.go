@@ -22,8 +22,8 @@ import (
 	"os"
 
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/logging"
-	"github.com/algorand/go-algorand/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 // An Autopsy is a trace of the ordered input events and output

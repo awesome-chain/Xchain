@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/algorand/go-algorand/config"
-	"github.com/algorand/go-algorand/logging"
 	"github.com/algorand/go-algorand/network"
-	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/util"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 const testNetTimeout = 100 * time.Millisecond

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/algorand/go-algorand/config"
-	"github.com/algorand/go-algorand/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 // The player implements the top-level state machine functionality of the

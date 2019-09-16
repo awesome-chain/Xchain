@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 )
 
 // A proposalSeeker finds the vote with the lowest credential until freeze() is

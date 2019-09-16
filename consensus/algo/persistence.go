@@ -24,11 +24,11 @@ import (
 	"sync"
 
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/logging"
-	"github.com/algorand/go-algorand/logging/logspec"
-	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/util/db"
 	"github.com/algorand/go-algorand/util/timers"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging/logspec"
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )
 
 // diskState represents the state required by the agreement protocol to be persistent.

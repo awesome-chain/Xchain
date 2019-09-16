@@ -21,7 +21,7 @@ import (
 
 	"github.com/algorand/go-algorand/config"
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 )
 
 var filterTimeout = 2 * config.Protocol.SmallLambda

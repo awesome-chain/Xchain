@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/logging/telemetryspec"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging/telemetryspec"
 )
 
 // We call all of the following messages post-filtering, such that

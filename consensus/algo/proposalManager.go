@@ -19,7 +19,7 @@ package agreement
 import (
 	"fmt"
 
-	"github.com/algorand/go-algorand/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 )
 
 // A proposalManager is a proposalMachine which applies relay rules to incoming

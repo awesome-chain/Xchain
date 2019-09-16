@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/algorand/go-algorand/data/bookkeeping"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
 )
 
 // A Certificate contains a cryptographic proof that agreement was reached on a
