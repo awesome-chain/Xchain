@@ -26,7 +26,7 @@ import (
 //  - e.T = voteAccepted or voteFilterRequest
 //  - v.R.Step != propose
 //  - for all votes v = e.Vote, v.R.Step is the same
-//  - (Algorand safety assumptions on the equivocation of votes)
+//  - (Xchain safety assumptions on the equivocation of votes)
 //
 // Postconditions (let e be the returned event):
 //  if Input is of type voteAccepted:

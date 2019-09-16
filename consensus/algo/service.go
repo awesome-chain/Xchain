@@ -32,7 +32,7 @@ const (
 	defaultCadaverName = "agreement"
 )
 
-// Service represents an instance of an execution of Algorand's agreement protocol.
+// Service represents an instance of an execution of Xchain's agreement protocol.
 type Service struct {
 	parameters
 

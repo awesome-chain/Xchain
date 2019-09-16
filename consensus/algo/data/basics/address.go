@@ -34,7 +34,7 @@ const (
 )
 
 // GetChecksum returns the checksum as []byte
-// Checksum in Algorand are the last 4 bytes of the shortAddress Hash. H(Address)[28:]
+// Checksum in Xchain are the last 4 bytes of the shortAddress Hash. H(Address)[28:]
 func (addr Address) GetChecksum() []byte {
 	shortAddressHash := crypto.Hash(addr[:])
 	checksum := shortAddressHash[len(shortAddressHash)-checksumLength:]

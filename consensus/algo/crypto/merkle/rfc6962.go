@@ -1,4 +1,4 @@
-// RFC6962, soon to be modified by us (Algorand) to use SHA512-256 instead of SHA256 to avoid length extension attacks
+// RFC6962, soon to be modified by us (Xchain) to use SHA512-256 instead of SHA256 to avoid length extension attacks
 
 // Copyright 2016 Google Inc. All Rights Reserved.
 //

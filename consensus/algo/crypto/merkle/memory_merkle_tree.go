@@ -1,4 +1,4 @@
-// This file copied from merkle/memory_merkle_tree.go in Trillian (github.com/google/trillian), modified by us (Algorand) to not import the whole trillian package
+// This file copied from merkle/memory_merkle_tree.go in Trillian (github.com/google/trillian), modified by us (Xchain) to not import the whole trillian package
 // Original copyright notice reproduced below
 
 // Copyright 2016 Google Inc. All Rights Reserved.

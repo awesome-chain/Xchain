@@ -46,7 +46,7 @@ const Mainnet protocol.NetworkID = "mainnet"
 // GenesisJSONFile is the name of the genesis.json file
 const GenesisJSONFile = "genesis.json"
 
-// Global defines global Algorand protocol parameters which should not be overriden.
+// Global defines global Xchain protocol parameters which should not be overriden.
 type Global struct {
 	SmallLambda time.Duration // min amount of time to wait for leader's credential (i.e., time to propagate one credential)
 	BigLambda   time.Duration // max amount of time to wait for leader's proposal (i.e., time to propagate one block)
@@ -679,7 +679,7 @@ type Local struct {
 	EnableRequestLogger bool
 }
 
-// Filenames of config files within the configdir (e.g. ~/.algorand)
+// Filenames of config files within the configdir (e.g. ~/.Xchain)
 
 // ConfigFilename is the name of the config.json file where we store per-algod-instance settings
 const ConfigFilename = "config.json"
@@ -866,7 +866,7 @@ func SetGlobalConfigFileRoot(rootPath string) string {
 }
 
 // GetDefaultConfigFilePath retrieves the default directory for global (not per-instance) config files
-// By default we store in ~/.algorand/.
+// By default we store in ~/.Xchain/.
 // This will likely only change for tests.
 func GetDefaultConfigFilePath() (string, error) {
 	currentUser, err := user.Current()
@@ -876,5 +876,5 @@ func GetDefaultConfigFilePath() (string, error) {
 	if currentUser.HomeDir == "" {
 		return "", errors.New("GetDefaultConfigFilePath fail - current user has no home directory")
 	}
-	return filepath.Join(currentUser.HomeDir, ".algorand"), nil
+	return filepath.Join(currentUser.HomeDir, ".xchain"), nil
 }

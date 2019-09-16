@@ -20,7 +20,7 @@ package protocol
 // consensus protocol.
 type ConsensusVersion string
 
-// DEPRECATEDConsensusV0 is a baseline version of the Algorand consensus protocol.
+// DEPRECATEDConsensusV0 is a baseline version of the Xchain consensus protocol.
 // at the time versioning was introduced.
 // It is now deprecated.
 const DEPRECATEDConsensusV0 = ConsensusVersion("v0")
@@ -69,7 +69,7 @@ const ConsensusV12 = ConsensusVersion("v12")
 
 // ConsensusV13 makes the consensus version a meaningful string.
 const ConsensusV13 = ConsensusVersion(
-	// Points to version of the Algorand spec as of May 21, 2019.
+	// Points to version of the Xchain spec as of May 21, 2019.
 	"https://github.com/algorand/spec/tree/0c8a9dc44d7368cc266d5407b79fb3311f4fc795",
 )
 

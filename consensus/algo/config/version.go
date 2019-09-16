@@ -38,13 +38,13 @@ const VersionMinor = 0
 // Version is the type holding our full version information.
 type Version struct {
 
-	// Algorand's major version number
+	// Xchain's major version number
 	Major int
 
-	// Algorand's minor version number
+	// Xchain's minor version number
 	Minor int
 
-	// Algorand's Build Number
+	// Xchain's Build Number
 	BuildNumber int
 
 	// Suffix for any metadata

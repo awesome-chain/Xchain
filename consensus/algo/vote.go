@@ -45,7 +45,7 @@ type (
 		Sig     crypto.OneTimeSignature             `codec:"sig,omitempty,omitemptycheckstruct"`
 	}
 
-	// A vote is an endorsement of a particular proposal in Algorand
+	// A vote is an endorsement of a particular proposal in Xchain
 	vote struct {
 		_struct struct{}                `codec:",omitempty,omitemptyarray"`
 		R       rawVote                 `codec:"r"`

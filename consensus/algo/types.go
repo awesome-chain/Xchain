@@ -43,14 +43,14 @@ type (
 	// round denotes a single round of the agreement protocol
 	round = basics.Round
 
-	// step is a sequence number denoting distinct stages in Algorand
+	// step is a sequence number denoting distinct stages in Xchain
 	step uint64
 
 	// period is used to track progress with a given round in the protocol
 	period uint64
 )
 
-// Algorand 2.0 steps
+// Xchain 2.0 steps
 const (
 	propose step = iota
 	soft

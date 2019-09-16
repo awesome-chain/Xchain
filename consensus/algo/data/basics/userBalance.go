@@ -239,7 +239,7 @@ func (u AccountData) WithUpdatedRewards(proto config.ConsensusParams, rewardsLev
 }
 
 // VotingStake returns the amount of MicroAlgos associated with the user's account
-// for the purpose of participating in the Algorand protocol.  It assumes the
+// for the purpose of participating in the Xchain protocol.  It assumes the
 // caller has already updated rewards appropriately using WithUpdatedRewards().
 func (u AccountData) VotingStake() MicroAlgos {
 	if u.Status != Online {
