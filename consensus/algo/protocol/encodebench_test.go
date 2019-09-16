@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@ package protocol
 import (
 	"testing"
 
-	"github.com/algorand/go-codec/codec"
+	"github.com/awesome-chain/go-codec/codec"
 )
 
 type s struct {

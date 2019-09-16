@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -17,9 +17,9 @@
 package basics
 
 import (
-	"github.com/algorand/go-codec/codec"
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
+	"github.com/awesome-chain/go-codec/codec"
 )
 
 // RoundInterval is a number of rounds

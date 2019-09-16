@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/algorand/go-deadlock"
+	"github.com/awesome-chain/go-deadlock"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"

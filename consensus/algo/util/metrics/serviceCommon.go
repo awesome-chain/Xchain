@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ package metrics
 import (
 	"context"
 
-	"github.com/algorand/go-deadlock"
+	"github.com/awesome-chain/go-deadlock"
 )
 
 // ServiceConfig would contain all the information we need in order to create a listening server endpoint.

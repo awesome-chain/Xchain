@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 package metrics
 
 import (
-	"github.com/algorand/go-deadlock"
+	"github.com/awesome-chain/go-deadlock"
 )
 
 // Counter represent a single counter variable.

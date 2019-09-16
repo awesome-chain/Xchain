@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Algorand, Inc.
+// Copyright (C) 2019 Xchain, Inc.
 // This file is part of Xchain
 //
 // Xchain is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/algorand/go-deadlock"
+	"github.com/awesome-chain/go-deadlock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
