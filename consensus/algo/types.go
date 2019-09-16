@@ -1,19 +1,47 @@
-package algo
+// Copyright (C) 2019 Algorand, Inc.
+// This file is part of go-algorand
+//
+// go-algorand is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// go-algorand is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
+
+package agreement
 
 import (
-	"context"
-	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
-	"github.com/awesome-chain/Xchain/core/types"
-	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"time"
+
+	"github.com/algorand/go-algorand/config"
+	"github.com/algorand/go-algorand/data/basics"
+	"github.com/algorand/go-algorand/logging"
 )
 
-// Round represents a protocol round index
-type Round uint64
+var filterTimeout = 2 * config.Protocol.SmallLambda
+var deadlineTimeout = config.Protocol.BigLambda + config.Protocol.SmallLambda
+var partitionStep = next + 3
+var recoveryExtraTimeout = config.Protocol.SmallLambda
+
+// FilterTimeout is the duration of the first agreement step.
+func FilterTimeout() time.Duration {
+	return filterTimeout
+}
+
+// DeadlineTimeout is the duration of the second agreement step.
+func DeadlineTimeout() time.Duration {
+	return deadlineTimeout
+}
 
 type (
 	// round denotes a single round of the agreement protocol
-	round = Round
+	round = basics.Round
 
 	// step is a sequence number denoting distinct stages in Algorand
 	step uint64
@@ -35,55 +63,84 @@ const (
 	down
 )
 
-var (
-	emptyOutput = vrf.Output{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} //0x0000000000000000000000000000000000000000000000000000000000000000
-)
+func (s step) nextVoteRanges() (lower, upper time.Duration) {
+	extra := recoveryExtraTimeout // eg  2500 ms
+	lower = deadlineTimeout       // eg 17500 ms (15000 + 2500)
+	upper = lower + extra         // eg 20000 ms
 
-type BlockFactory interface {
-	// AssembleBlock produces a new ValidatedBlock which is suitable for proposal
-	// at a given Round.  The time argument specifies a target deadline by
-	// which the block should be produced.  Specifically, the deadline can
-	// cause the factory to add fewer transactions to the block in question
-	// than might otherwise be possible.
-	//
-	// AssembleBlock should produce a ValidatedBlock for which the corresponding
-	// BlockValidator validates (i.e. for which BlockValidator.Validate
-	// returns true). If an insufficient number of nodes can assemble valid
-	// entries, the agreement protocol may lose liveness.
-	//
-	// AssembleBlock may return an error if the BlockFactory is unable to
-	// produce a ValidatedBlock for the given round. If an insufficient number of
-	// nodes on the network can assemble entries, the agreement protocol may
-	// lose liveness.
-	AssembleBlock(uint64, time.Time) (*types.Block, error)
+	for i := next; i < s; i++ {
+		extra *= 2
+		lower = upper
+		upper = lower + extra
+	}
+
+	// e.g. if s == 14
+	// extra = 2 ^ 8 * 2500ms = 256 * 2.5 = 512 + 128 = 640s
+
+	return lower, upper
 }
 
-
-type BlockValidator interface {
-	// Validate must return an error if a given Block cannot be determined
-	// to be valid as applied to the agreement state; otherwise, it returns
-	// nil.
-	//
-	// The correctness of Validate is essential to the correctness of the
-	// protocol. If Validate accepts an invalid Block (i.e., a false
-	// positive), the agreement protocol may fork, or the system state may
-	// even become undefined. If Validate rejects a valid Block (i.e., a
-	// false negative), the agreement protocol may even lose
-	// liveness. Validate should therefore be conservative in which Entries
-	// it accepts.
-	//
-	// TODO There should probably be a second Round argument here.
-	Validate(context.Context, *types.Block) (*types.Block, error)
+// ReachesQuorum compares the current weight to the thresholds appropriate for the step,
+// to determine if we've reached a quorum.
+func (s step) reachesQuorum(proto config.ConsensusParams, weight uint64) bool {
+	switch s {
+	case propose:
+		logging.Base().Warn("Called Propose.ReachesQuorum")
+		return false
+	case soft:
+		return weight >= proto.SoftCommitteeThreshold
+	case cert:
+		return weight >= proto.CertCommitteeThreshold
+	case late:
+		return weight >= proto.LateCommitteeThreshold
+	case redo:
+		return weight >= proto.RedoCommitteeThreshold
+	case down:
+		return weight >= proto.DownCommitteeThreshold
+	default:
+		return weight >= proto.NextCommitteeThreshold
+	}
 }
 
-// Hashable is an interface implemented by an object that can be represented
-// with a sequence of bytes to be hashed or signed, together with a type ID
-// to distinguish different types of objects.
-type Hashable interface {
-	ToBeHashed() (protocol.HashID, []byte, error)
+// threshold returns the threshold necessary for the given step.
+// Do not compare values to the output of this function directly;
+// instead, use s.reachesQuorum to avoid off-by-one errors.
+func (s step) threshold(proto config.ConsensusParams) uint64 {
+	switch s {
+	case propose:
+		logging.Base().Warn("Called propose.threshold")
+		return 0
+	case soft:
+		return proto.SoftCommitteeThreshold
+	case cert:
+		return proto.CertCommitteeThreshold
+	case late:
+		return proto.LateCommitteeThreshold
+	case redo:
+		return proto.RedoCommitteeThreshold
+	case down:
+		return proto.DownCommitteeThreshold
+	default:
+		return proto.NextCommitteeThreshold
+	}
 }
 
-func hashRep(h Hashable) []byte {
-	hashid, data, _ := h.ToBeHashed()
-	return append([]byte(hashid), data...)
+// CommitteeSize returns the size of the committee required for the step
+func (s step) committeeSize(proto config.ConsensusParams) uint64 {
+	switch s {
+	case propose:
+		return proto.NumProposers
+	case soft:
+		return proto.SoftCommitteeSize
+	case cert:
+		return proto.CertCommitteeSize
+	case late:
+		return proto.LateCommitteeSize
+	case redo:
+		return proto.RedoCommitteeSize
+	case down:
+		return proto.DownCommitteeSize
+	default:
+		return proto.NextCommitteeSize
+	}
 }

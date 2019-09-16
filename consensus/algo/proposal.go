@@ -1,205 +1,266 @@
-package algo
+// Copyright (C) 2019 Algorand, Inc.
+// This file is part of go-algorand
+//
+// go-algorand is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// go-algorand is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
+
+package agreement
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
-	"github.com/awesome-chain/Xchain/common"
-	"github.com/awesome-chain/Xchain/consensus"
-	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
-	"github.com/awesome-chain/Xchain/core/types"
-	"github.com/awesome-chain/Xchain/crypto"
-	"github.com/awesome-chain/Xchain/crypto/vrf"
-	"github.com/awesome-chain/Xchain/rlp"
+
+	"github.com/algorand/go-algorand/crypto"
+	"github.com/algorand/go-algorand/data/basics"
+	"github.com/algorand/go-algorand/data/bookkeeping"
+	"github.com/algorand/go-algorand/data/committee"
+	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/protocol"
 )
 
-//var bottom ProposalValue
+var bottom proposalValue
 
-// ProposalValue is a triplet of a block hashes (the contents themselves and the encoding of the block),
+// A proposalValue is a triplet of a block hashes (the contents themselves and the encoding of the block),
 // its proposer, and the period in which it was proposed.
-type ProposalValue struct {
-	OriginalPeriod   uint64
-	OriginalProposer []byte
-	BlockDigest      common.Hash
-	EncodingDigest   common.Hash
+type proposalValue struct {
+	_struct struct{} `codec:",omitempty,omitemptyarray"`
+
+	OriginalPeriod   period         `codec:"oper"`
+	OriginalProposer basics.Address `codec:"oprop"`
+	BlockDigest      crypto.Digest  `codec:"dig"`    // = proposal.Block.Digest()
+	EncodingDigest   crypto.Digest  `codec:"encdig"` // = crypto.HashObj(proposal)
 }
 
-// UnauthenticatedProposal is an Block along with everything needed to validate it.
-type UnauthenticatedProposal struct {
-	*types.Block
-	SeedProof        []byte
-	OriginalPeriod   uint64
-	OriginalProposer []byte
+// A transmittedPayload is the representation of a proposal payload on the wire.
+type transmittedPayload struct {
+	_struct struct{} `codec:",omitempty,omitemptyarray"`
+
+	unauthenticatedProposal
+	PriorVote unauthenticatedVote `codec:"pv"`
+}
+
+// A unauthenticatedProposal is an Block along with everything needed to validate it.
+type unauthenticatedProposal struct {
+	_struct struct{} `codec:",omitempty,omitemptyarray"`
+
+	bookkeeping.Block
+	SeedProof crypto.VrfProof `codec:"sdpf"`
+
+	OriginalPeriod   period         `codec:"oper"`
+	OriginalProposer basics.Address `codec:"oprop"`
 }
 
 // ToBeHashed implements the Hashable interface.
-func (p *UnauthenticatedProposal) ToBeHashed() (protocol.HashID, []byte, error) {
-	bs, err := rlp.EncodeToBytes(p)
-	if err != nil {
-		return "", nil, err
-	}
-	return protocol.Payload, bs, nil
+func (p unauthenticatedProposal) ToBeHashed() (protocol.HashID, []byte) {
+	return protocol.Payload, protocol.Encode(p)
 }
 
 // value returns the proposal-value associated with this proposal.
-func (p *UnauthenticatedProposal) Value() *ProposalValue {
-	return &ProposalValue{
+func (p unauthenticatedProposal) value() proposalValue {
+	return proposalValue{
 		OriginalPeriod:   p.OriginalPeriod,
 		OriginalProposer: p.OriginalProposer,
-		BlockDigest:      p.Hash(),
-		EncodingDigest:   HashObj(p),
+		BlockDigest:      p.Digest(),
+		EncodingDigest:   crypto.HashObj(p),
 	}
-}
-
-// value returns the proposal-value associated with this proposal.
-func (p *UnauthenticatedProposal) Seed() common.Seed {
-	return p.seed()
-}
-
-// value returns the proposal-value associated with this proposal.
-func (p *UnauthenticatedProposal) seed() common.Seed {
-	return p.Header().Seed
 }
 
 // A proposal is an Block along with everything needed to validate it.
-type Proposal struct {
-	UnauthenticatedProposal
+type proposal struct {
+	unauthenticatedProposal
 
 	// ve stores an optional ValidatedBlock representing this block.
 	// This allows us to avoid re-computing the state delta when
 	// applying this block to the ledger.  This is not serialized
 	// to disk, so after a crash, we will fall back to applying the
 	// raw Block to the ledger (and re-computing the state delta).
-	ve *types.Block
+	ve ValidatedBlock
 }
 
-func MakeProposal(b *types.Block, pf []byte, origPer uint64, origProp *ecdsa.PublicKey) *Proposal {
-	p := &Proposal{}
-	p.Block = b
-	p.SeedProof = pf
-	p.OriginalPeriod = origPer
-	p.OriginalProposer = crypto.FromECDSAPub(origProp)
-	p.ve = b
-	return p
+func makeProposal(ve ValidatedBlock, pf crypto.VrfProof, origPer period, origProp basics.Address) proposal {
+	e := ve.Block()
+	var payload unauthenticatedProposal
+	payload.Block = e
+	payload.SeedProof = pf
+	payload.OriginalPeriod = origPer
+	payload.OriginalProposer = origProp
+	return proposal{unauthenticatedProposal: payload, ve: ve}
 }
 
-func (p *Proposal) U() *UnauthenticatedProposal {
-	return &p.UnauthenticatedProposal
+func (p proposal) u() unauthenticatedProposal {
+	return p.unauthenticatedProposal
 }
 
 // A proposerSeed is a Hashable input to proposer seed derivation.
-type ProposerSeed struct {
-	Addr common.Address
-	VRF  vrf.Output
+type proposerSeed struct {
+	Addr basics.Address   `codec:"addr"`
+	VRF  crypto.VrfOutput `codec:"vrf"`
 }
 
 // ToBeHashed implements the Hashable interface.
-func (s *ProposerSeed) ToBeHashed() (protocol.HashID, []byte, error) {
-	bs, err := rlp.EncodeToBytes(s)
-	if err != nil {
-		return "", nil, err
-	}
-	return protocol.ProposerSeed, bs, nil
+func (s proposerSeed) ToBeHashed() (protocol.HashID, []byte) {
+	return protocol.ProposerSeed, protocol.Encode(s)
 }
 
 // A seedInput is a Hashable input to seed rerandomization.
-type SeedInput struct {
-	Alpha   common.Hash
-	History common.Hash
+type seedInput struct {
+	Alpha   crypto.Digest `codec:"alpha"`
+	History crypto.Digest `codec:"hist"`
 }
 
 // ToBeHashed implements the Hashable interface.
-func (i *SeedInput) ToBeHashed() (protocol.HashID, []byte, error) {
-	bs, err := rlp.EncodeToBytes(i)
-	if err != nil {
-		return "", nil, err
-	}
-	return protocol.ProposerSeed, bs, nil
+func (i seedInput) ToBeHashed() (protocol.HashID, []byte) {
+	return protocol.ProposerSeed, protocol.Encode(i)
 }
 
-func DeriveNewSeed(address common.Address, vrfSK *vrf.PrivateKey, rnd uint64, period uint64, ledger consensus.ChainReader) (newSeed common.Seed, seedProof vrf.Proof, err error) {
-	var seedRound uint64
-	var alpha common.Hash
-	var output vrf.Output
-	//TODO read config
-	if rnd > 2 {
-		seedRound = rnd - 2
+func deriveNewSeed(address basics.Address, vrf *crypto.VRFSecrets, rnd round, period period, ledger LedgerReader) (newSeed committee.Seed, seedProof crypto.VRFProof, reterr error) {
+	var ok bool
+	var vrfOut crypto.VrfOutput
+
+	cparams, err := ledger.ConsensusParams(ParamsRound(rnd))
+	if err != nil {
+		err = fmt.Errorf("failed to obtain consensus parameters in round %v: %v", ParamsRound(rnd), err)
+		return
 	}
-	prevHeader := ledger.GetHeaderByNumber(uint64(seedRound))
-	prevSeed := prevHeader.Seed
+	var alpha crypto.Digest
+	prevSeed, err := ledger.Seed(seedRound(rnd, cparams))
+	if err != nil {
+		reterr = fmt.Errorf("failed read seed of round %v: %v", seedRound(rnd, cparams), err)
+		return
+	}
+
 	if period == 0 {
-		output, seedProof = vrfSK.Evaluate(prevSeed[:])
-		alpha = HashObj(&ProposerSeed{
-			Addr: address,
-			VRF:  output,
-		})
+		seedProof, ok = vrf.SK.Prove(prevSeed)
+		if !ok {
+			reterr = fmt.Errorf("could not make seed proof")
+			return
+		}
+		vrfOut, ok = seedProof.Hash()
+		if !ok {
+			// If proof2hash fails on a proof we produced with VRF Prove, this indicates our VRF code has a dangerous bug.
+			// Panicking is the only safe thing to do.
+			logging.Base().Panicf("VrfProof.Hash() failed on a proof we ourselves generated; this indicates a bug in the VRF code: %v", seedProof)
+		}
+		alpha = crypto.HashObj(proposerSeed{Addr: address, VRF: vrfOut})
 	} else {
-		alpha = common.Hash(prevSeed)
+		alpha = crypto.HashObj(prevSeed)
 	}
-	input := SeedInput{
-		Alpha: alpha,
+
+	input := seedInput{Alpha: alpha}
+	rerand := rnd % basics.Round(cparams.SeedLookback*cparams.SeedRefreshInterval)
+	if rerand < basics.Round(cparams.SeedLookback) {
+		digrnd := rnd.SubSaturate(basics.Round(cparams.SeedLookback * cparams.SeedRefreshInterval))
+		oldDigest, err := ledger.LookupDigest(digrnd)
+		if err != nil {
+			reterr = fmt.Errorf("could not lookup old entry digest (for seed) from round %v: %v", digrnd, err)
+			return
+		}
+		input.History = oldDigest
 	}
-	newSeed = common.Seed(HashObj(&input))
+	newSeed = committee.Seed(crypto.HashObj(input))
 	return
 }
 
-func VerifyNewSeed(p *UnauthenticatedProposal, ledger consensus.ChainReader) error {
-	var seedRound uint64
-	var alpha common.Hash
-	value := p.Value()
-	rnd := p.Number().Uint64()
-	//TODO read config
-	if rnd > 2 {
-		seedRound = rnd - 2
+func verifyNewSeed(p unauthenticatedProposal, ledger LedgerReader) error {
+	value := p.value()
+	rnd := p.Round()
+	cparams, err := ledger.ConsensusParams(ParamsRound(rnd))
+	if err != nil {
+		return fmt.Errorf("failed to obtain consensus parameters in round %v: %v", ParamsRound(rnd), err)
 	}
-	prevHeader := ledger.GetHeaderByNumber(uint64(seedRound))
-	prevSeed := prevHeader.Seed
+
+	balanceRound := balanceRound(rnd, cparams)
+	proposerRecord, err := ledger.BalanceRecord(balanceRound, value.OriginalProposer)
+	if err != nil {
+		return fmt.Errorf("failed to obtain balance record for address %v in round %v: %v", value.OriginalProposer, balanceRound, err)
+	}
+
+	var alpha crypto.Digest
+	prevSeed, err := ledger.Seed(seedRound(rnd, cparams))
+	if err != nil {
+		return fmt.Errorf("failed read seed of round %v: %v", seedRound(rnd, cparams), err)
+	}
 
 	if value.OriginalPeriod == 0 {
-		pubKey := crypto.ToECDSAPub(p.OriginalProposer)
-		var vrfPubKey vrf.PublicKey
-		vrfPubKey.PublicKey = pubKey
-		output, err := vrfPubKey.ProofToHash(prevSeed[:], p.SeedProof[:])
-		if err != nil {
-			return fmt.Errorf("verify proof error: [%v]", err)
+		verifier := proposerRecord.SelectionID
+		ok, vrfOut := verifier.Verify(p.SeedProof, prevSeed)
+		if !ok {
+			return fmt.Errorf("payload seed proof malformed (%v, %v)", prevSeed, p.SeedProof)
 		}
-		if output == emptyOutput {
-			return fmt.Errorf("verify failed: [%v]", output)
+		vrfOut, ok = p.SeedProof.Hash()
+		if !ok {
+			// If proof2hash fails on a proof we produced with VRF Prove, this indicates our VRF code has a dangerous bug.
+			// Panicking is the only safe thing to do.
+			logging.Base().Panicf("VrfProof.Hash() failed on a proof we ourselves generated; this indicates a bug in the VRF code: %v", p.SeedProof)
 		}
-		alpha = HashObj(&ProposerSeed{
-			Addr: crypto.PubkeyToAddress(*pubKey),
-			VRF:  output,
-		})
+		alpha = crypto.HashObj(proposerSeed{Addr: proposerRecord.Addr, VRF: vrfOut})
 	} else {
-		alpha = common.Hash(prevSeed)
+		alpha = crypto.HashObj(prevSeed)
 	}
 
-	input := SeedInput{Alpha: alpha}
-
-	if p.Seed() != common.Seed(HashObj(&input)) {
-		return fmt.Errorf("payload seed malformed (%v != %v)", common.Seed(HashObj(&input)), p.Seed())
+	input := seedInput{Alpha: alpha}
+	rerand := rnd % basics.Round(cparams.SeedLookback*cparams.SeedRefreshInterval)
+	if rerand < basics.Round(cparams.SeedLookback) {
+		digrnd := rnd.SubSaturate(basics.Round(cparams.SeedLookback * cparams.SeedRefreshInterval))
+		oldDigest, err := ledger.LookupDigest(digrnd)
+		if err != nil {
+			return fmt.Errorf("could not lookup old entry digest (for seed) from round %v: %v", digrnd, err)
+		}
+		input.History = oldDigest
+	}
+	if p.Seed() != committee.Seed(crypto.HashObj(input)) {
+		return fmt.Errorf("payload seed malformed (%v != %v)", committee.Seed(crypto.HashObj(input)), p.Seed())
 	}
 	return nil
 }
 
-// Validate returns true if the proposal is valid.
-// It checks the proposal seed and then calls validator.Validate.
-func (p UnauthenticatedProposal) Validate(ctx context.Context, current uint64, ledger consensus.ChainReader, validator BlockValidator) (*Proposal, error) {
-	entry := p.Block
-
-	if entry.Number().Uint64() != current {
-		return nil, fmt.Errorf("proposed entry from wrong round: entry.Round() != current: %v != %v", Round(entry.Number().Uint64()), current)
+func proposalForBlock(address basics.Address, vrf *crypto.VRFSecrets, ve ValidatedBlock, period period, ledger LedgerReader) (proposal, proposalValue, error) {
+	rnd := ve.Block().Round()
+	newSeed, seedProof, err := deriveNewSeed(address, vrf, rnd, period, ledger)
+	if err != nil {
+		return proposal{}, proposalValue{}, fmt.Errorf("proposalForBlock: could not derive new seed: %v", err)
 	}
 
-	err := VerifyNewSeed(&p, ledger)
+	ve = ve.WithSeed(newSeed)
+	proposal := makeProposal(ve, seedProof, period, address)
+	value := proposalValue{
+		OriginalPeriod:   period,
+		OriginalProposer: address,
+		BlockDigest:      proposal.Block.Digest(),
+		EncodingDigest:   crypto.HashObj(proposal),
+	}
+	return proposal, value, nil
+}
+
+// validate returns true if the proposal is valid.
+// It checks the proposal seed and then calls validator.Validate.
+func (p unauthenticatedProposal) validate(ctx context.Context, current round, ledger LedgerReader, validator BlockValidator) (proposal, error) {
+	var invalid proposal
+	entry := p.Block
+
+	if entry.Round() != current {
+		return invalid, fmt.Errorf("proposed entry from wrong round: entry.Round() != current: %v != %v", entry.Round(), current)
+	}
+
+	err := verifyNewSeed(p, ledger)
 	if err != nil {
-		return nil, fmt.Errorf("proposal has bad seed: %v", err)
+		return invalid, fmt.Errorf("proposal has bad seed: %v", err)
 	}
 
 	ve, err := validator.Validate(ctx, entry)
 	if err != nil {
-		return nil, fmt.Errorf("EntryValidator rejected entry: %v", err)
+		return invalid, fmt.Errorf("EntryValidator rejected entry: %v", err)
 	}
-	pubKey := crypto.ToECDSAPub(p.OriginalProposer)
-	return MakeProposal(ve, p.SeedProof, p.OriginalPeriod, pubKey), nil
+
+	return makeProposal(ve, p.SeedProof, p.OriginalPeriod, p.OriginalProposer), nil
 }
