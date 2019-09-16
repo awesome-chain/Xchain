@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
 
-	"github.com/algorand/go-algorand/crypto"
-	"github.com/algorand/go-algorand/data/basics"
-	"github.com/algorand/go-algorand/data/committee"
+	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )

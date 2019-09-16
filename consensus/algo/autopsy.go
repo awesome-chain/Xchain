@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/algorand/go-algorand/data/basics"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 )

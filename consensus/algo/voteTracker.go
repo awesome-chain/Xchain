@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"sort"
 
-	"github.com/algorand/go-algorand/config"
-	"github.com/algorand/go-algorand/crypto"
-	"github.com/algorand/go-algorand/data/basics"
+	"github.com/awesome-chain/Xchain/consensus/algo/config"
+	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging/telemetryspec"
 )

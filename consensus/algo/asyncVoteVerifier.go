@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/algorand/go-algorand/util/execpool"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/execpool"
 )
 
 type asyncVerifyVoteRequest struct {

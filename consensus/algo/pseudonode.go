@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/algorand/go-algorand/data/account"
-	"github.com/algorand/go-algorand/data/basics"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging/logspec"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging/telemetryspec"

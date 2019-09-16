@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/algorand/go-algorand/config"
+	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging/logspec"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"

@@ -17,7 +17,7 @@
 package agreement
 
 import (
-	"github.com/algorand/go-algorand/data/basics"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 )
 
 // ParamsRound returns the round from which consensus parameters
