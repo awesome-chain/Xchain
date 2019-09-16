@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
 
-// Package agreement implements Algorand's agreement protocol, which
+// package algo implements Algorand's agreement protocol, which
 // enables all nodes to consistently update the state of the system.
 //
 // The Service establishes a consensus on the ordering of
@@ -40,4 +40,4 @@
 //
 // If Ledger and db.Accessor provide crash-safe storage, agreement
 // will also recover safely after crashes.
-package agreement
+package algo

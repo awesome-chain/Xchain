@@ -27,8 +27,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/algorand/go-algorand/util/codecs"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/codecs"
 )
 
 var defaultConfig = Local{

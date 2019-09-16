@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
 
-package agreement
+package algo
 
 //go:generate dbgen -i agree.sql -p agreement -n agree -o agreeInstall.go
 import (
 	"context"
 	"time"
 
-	"github.com/algorand/go-algorand/util/db"
-	"github.com/algorand/go-algorand/util/timers"
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/db"
 	"github.com/awesome-chain/Xchain/consensus/algo/util/execpool"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/timers"
 )
 
 const (

@@ -130,5 +130,5 @@ func GetAlgorandVersion() string {
 
 // GetLicenseInfo retrieves the current license information
 func GetLicenseInfo() string {
-	return "go-algorand is licensed with AGPLv3.0\nsource code available at https://github.com/algorand/go-algorand"
+	return "go-algorand is licensed with AGPLv3.0\nsource code available at https://github.com/awesome-chain/Xchain/consensus/algo"
 }

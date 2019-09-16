@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
 
-package agreement
+package algo
 
 // A proposalTable stores proposals which need to be authenticated
 // after their prior votes have been processed.

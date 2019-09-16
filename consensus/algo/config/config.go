@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/algorand/go-algorand/util/codecs"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/codecs"
 )
 
 // Devnet identifies the 'development network' use for development and not generally accessible publicly

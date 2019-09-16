@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
 
-package agreement
+package algo
 
 //go:generate dbgen -i agree.sql -p agreement -n agree -o agreeInstall.go
 import (
@@ -23,12 +23,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/algorand/go-algorand/util/db"
-	"github.com/algorand/go-algorand/util/timers"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging/logspec"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/db"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/timers"
 )
 
 // diskState represents the state required by the agreement protocol to be persistent.

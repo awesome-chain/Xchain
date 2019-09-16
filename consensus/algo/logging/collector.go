@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/algorand/go-algorand/util/s3"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/s3"
 )
 
 // CollectAndUploadData combines all of the data files that we want packaged up and uploaded

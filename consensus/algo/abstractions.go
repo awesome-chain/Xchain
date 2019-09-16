@@ -14,16 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
 
-package agreement
+package algo
 
 import (
 	"context"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
 	"time"
 
-	"github.com/algorand/go-algorand/data/account"
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/account"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"

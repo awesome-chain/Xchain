@@ -26,8 +26,8 @@ import "C"
 import (
 	"fmt"
 
-	"github.com/algorand/go-algorand/util/metrics"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
+	"github.com/awesome-chain/Xchain/consensus/algo/util/metrics"
 )
 
 // TODO: Remove metrics from crypto package
@@ -55,10 +55,10 @@ type Seed ed25519Seed
 
 /* Classical signatures */
 
-type ed25519Signature [C.crypto_sign_ed25519_BYTES]byte
-type ed25519PublicKey [C.crypto_sign_ed25519_PUBLICKEYBYTES]byte
-type ed25519PrivateKey [C.crypto_sign_ed25519_SECRETKEYBYTES]byte
-type ed25519Seed [C.crypto_sign_ed25519_SEEDBYTES]byte
+type ed25519Signature [64]byte
+type ed25519PublicKey [32]byte
+type ed25519PrivateKey [64]byte
+type ed25519Seed [32]byte
 
 // MasterDerivationKey is used to derive ed25519 keys for use in wallets
 type MasterDerivationKey [masterDerivationKeyLenBytes]byte
