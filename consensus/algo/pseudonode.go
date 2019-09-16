@@ -25,6 +25,9 @@ var errPseudonodeVerifierClosedChannel = fmt.Errorf("crypto verifier closed the 
 var errPseudonodeNoVotes = fmt.Errorf("no valid participation keys to generate votes for given round")
 var errPseudonodeNoProposals = fmt.Errorf("no valid participation keys to generate proposals for given round")
 
+type PseudoNode interface {
+	MakeProposals(ctx context.Context, r round, p period) (<-chan externalEvent, error)
+}
 
 type AsyncPseudoNode struct {
 	factory   BlockFactory

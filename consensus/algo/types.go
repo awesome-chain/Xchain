@@ -76,6 +76,13 @@ type BlockValidator interface {
 	Validate(context.Context, *types.Block) (*types.Block, error)
 }
 
+// A message represents an internal message which is passed between components
+// of the agreement service.
+type Message struct {
+	Proposal *Proposal
+	UnauthenticatedProposal *UnauthenticatedProposal
+}
+
 // Hashable is an interface implemented by an object that can be represented
 // with a sequence of bytes to be hashed or signed, together with a type ID
 // to distinguish different types of objects.
