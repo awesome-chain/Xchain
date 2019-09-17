@@ -28,6 +28,7 @@ import (
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
 )
 
 var bottom proposalValue
@@ -60,8 +61,10 @@ type unauthenticatedProposal struct {
 	SeedProof  crypto.VrfProof `codec:"sdpf"`
 	SeedProof2 vrf.Proof       `codec:"seedpf"`
 
-	OriginalPeriod   period         `codec:"oper"`
-	OriginalProposer basics.Address `codec:"oprop"`
+	OriginalPeriod    period                `codec:"oper"`
+	OriginalProposer  basics.Address        `codec:"oprop"`
+	OriginalProposer2 common.Address        `codec:"oriprop"`
+	OriginalPubKey    crypto2.S256PublicKey `codec:"oproppubkey"`
 }
 
 // ToBeHashed implements the Hashable interface.
@@ -72,10 +75,11 @@ func (p unauthenticatedProposal) ToBeHashed() (protocol.HashID, []byte) {
 // value returns the proposal-value associated with this proposal.
 func (p unauthenticatedProposal) value() proposalValue {
 	return proposalValue{
-		OriginalPeriod:   p.OriginalPeriod,
-		OriginalProposer: p.OriginalProposer,
-		BlockDigest:      p.Digest(),
-		EncodingDigest:   crypto.HashObj(p),
+		OriginalPeriod:    p.OriginalPeriod,
+		OriginalProposer:  p.OriginalProposer,
+		OriginalProposer2: p.OriginalProposer2,
+		BlockDigest:       p.Digest(),
+		EncodingDigest:    crypto.HashObj(p),
 	}
 }
 
@@ -101,14 +105,27 @@ func makeProposal(ve ValidatedBlock, pf crypto.VrfProof, origPer period, origPro
 	return proposal{unauthenticatedProposal: payload, ve: ve}
 }
 
+func makeProposal2(ve ValidatedBlock, pf vrf.Proof, origPer period, origProp common.Address, origPubKey crypto2.S256PublicKey) proposal {
+	e := ve.Block()
+	var payload unauthenticatedProposal
+	payload.Block = e
+	payload.SeedProof2 = pf
+	payload.OriginalPeriod = origPer
+	payload.OriginalProposer2 = origProp
+	payload.OriginalPubKey = origPubKey
+	return proposal{unauthenticatedProposal: payload, ve: ve}
+}
+
 func (p proposal) u() unauthenticatedProposal {
 	return p.unauthenticatedProposal
 }
 
 // A proposerSeed is a Hashable input to proposer seed derivation.
 type proposerSeed struct {
-	Addr basics.Address   `codec:"addr"`
-	VRF  crypto.VrfOutput `codec:"vrf"`
+	Addr  basics.Address   `codec:"addr"`
+	Addr2 common.Address   `codec:"address"`
+	VRF   crypto.VrfOutput `codec:"vrf"`
+	VRF2  vrf.Output       `codec:"output"`
 }
 
 // ToBeHashed implements the Hashable interface.
@@ -267,4 +284,107 @@ func (p unauthenticatedProposal) validate(ctx context.Context, current round, le
 	}
 
 	return makeProposal(ve, p.SeedProof, p.OriginalPeriod, p.OriginalProposer), nil
+}
+
+func DeriveNewSeed2(address common.Address, vrfSK *vrf.PrivateKey, rnd round, period period, ledger LedgerReader) (newSeed committee.Seed, seedProof vrf.Proof, err error) {
+	var alpha crypto.Digest
+	cparams, err := ledger.ConsensusParams(ParamsRound(rnd))
+	if err != nil {
+		err = fmt.Errorf("failed to obtain consensus parameters in round %v: %v", ParamsRound(rnd), err)
+		return
+	}
+	prevSeed, err := ledger.Seed(seedRound(rnd, cparams))
+	if err != nil {
+		return
+	}
+	if period == 0 {
+		output, proof := vrfSK.Evaluate(prevSeed[:])
+		alpha = crypto.HashObj(proposerSeed{
+			Addr2: address,
+			VRF2:  output,
+		})
+		copy(seedProof[:], proof)
+	} else {
+		alpha = crypto.HashObj(prevSeed)
+	}
+
+	input := seedInput{Alpha: alpha}
+	rerand := rnd % basics.Round(cparams.SeedLookback*cparams.SeedRefreshInterval)
+	if rerand < basics.Round(cparams.SeedLookback) {
+		digrnd := rnd.SubSaturate(basics.Round(cparams.SeedLookback * cparams.SeedRefreshInterval))
+		oldDigest, err0 := ledger.LookupDigest(digrnd)
+		if err0 != nil {
+			err = fmt.Errorf("could not lookup old entry digest (for seed) from round %v: %v", digrnd, err0)
+			return
+		}
+		input.History = oldDigest
+	}
+	newSeed = committee.Seed(crypto.HashObj(input))
+	return
+}
+
+func verifyNewSeed2(p unauthenticatedProposal, ledger LedgerReader) error {
+	value := p.value()
+	rnd := p.Round()
+	cparams, err := ledger.ConsensusParams(ParamsRound(rnd))
+	if err != nil {
+		return fmt.Errorf("failed to obtain consensus parameters in round %v: %v", ParamsRound(rnd), err)
+	}
+	var alpha crypto.Digest
+	prevSeed, err := ledger.Seed(seedRound(rnd, cparams))
+	if err != nil {
+		return fmt.Errorf("failed read seed of round %v: %v", seedRound(rnd, cparams), err)
+	}
+
+	if value.OriginalPeriod == 0 {
+		pubKey := vrf.PublicKey{
+			PublicKey: crypto2.ToECDSAPub(p.OriginalPubKey[:]),
+		}
+		output, err := pubKey.ProofToHash(prevSeed[:], p.SeedProof2[:])
+		if output == vrf.EmptyOutput || err != nil {
+			return fmt.Errorf("payload seed proof malformed (%v, %v)", prevSeed, p.SeedProof)
+		}
+		alpha = crypto.HashObj(proposerSeed{Addr2: value.OriginalProposer2, VRF2: vrf.Output(output)})
+	} else {
+		alpha = crypto.HashObj(prevSeed)
+	}
+
+	input := seedInput{Alpha: alpha}
+	rerand := rnd % basics.Round(cparams.SeedLookback*cparams.SeedRefreshInterval)
+	if rerand < basics.Round(cparams.SeedLookback) {
+		digrnd := rnd.SubSaturate(basics.Round(cparams.SeedLookback * cparams.SeedRefreshInterval))
+		oldDigest, err := ledger.LookupDigest(digrnd)
+		if err != nil {
+			return fmt.Errorf("could not lookup old entry digest (for seed) from round %v: %v", digrnd, err)
+		}
+		input.History = oldDigest
+	}
+	if p.Seed() != committee.Seed(crypto.HashObj(input)) {
+		return fmt.Errorf("payload seed malformed (%v != %v)", committee.Seed(crypto.HashObj(input)), p.Seed())
+	}
+	return nil
+}
+
+//
+//// Validate returns true if the proposal is valid.
+//// It checks the proposal seed and then calls validator.Validate.
+func (p unauthenticatedProposal) validate2(ctx context.Context, current basics.Round, ledger LedgerReader, validator BlockValidator) (proposal, error) {
+	var invalid proposal
+	entry := p.Block
+
+	if entry.Round() != current {
+		return invalid, fmt.Errorf("proposed entry from wrong round: entry.Round() != current: %v != %v", entry.Round(), current)
+	}
+
+	err := verifyNewSeed(p, ledger)
+	if err != nil {
+		return invalid, fmt.Errorf("proposal has bad seed: %v", err)
+	}
+
+	ve, err := validator.Validate(ctx, entry)
+	if err != nil {
+		return invalid, fmt.Errorf("EntryValidator rejected entry: %v", err)
+	}
+
+	return makeProposal2(ve, p.SeedProof2, p.OriginalPeriod, p.OriginalProposer2, p.OriginalPubKey), nil
 }
