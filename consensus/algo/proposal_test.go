@@ -7,7 +7,7 @@ import (
 )
 
 func TestProposal(t *testing.T) {
-	k, _ :=crypto.GenerateKey()
+	k, _ := crypto.GenerateKey()
 	b := crypto.FromECDSAPub(&k.PublicKey)
 	fmt.Println(len(b))
 	return

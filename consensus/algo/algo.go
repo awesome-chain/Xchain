@@ -6,13 +6,12 @@ import (
 )
 
 type Algo struct {
-
 }
 
-func (a *Algo) AssembleBlock(basics.Round, time.Time) (ValidatedBlock, error){
+func (a *Algo) AssembleBlock(basics.Round, time.Time) (ValidatedBlock, error) {
 	return nil, nil
 }
 
-func (a *Algo) AssembleProposal(basics.Round, period) (*proposal, *proposalValue, error){
+func (a *Algo) AssembleProposal(basics.Round, period) (*proposal, *proposalValue, error) {
 	return nil, nil, nil
 }

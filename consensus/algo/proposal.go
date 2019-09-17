@@ -36,11 +36,11 @@ var bottom proposalValue
 type proposalValue struct {
 	_struct struct{} `codec:",omitempty,omitemptyarray"`
 
-	OriginalPeriod   period         `codec:"oper"`
-	OriginalProposer basics.Address `codec:"oprop"`
+	OriginalPeriod    period         `codec:"oper"`
+	OriginalProposer  basics.Address `codec:"oprop"`
 	OriginalProposer2 common.Address `codec:"oriprop"`
-	BlockDigest      crypto.Digest  `codec:"dig"`    // = proposal.Block.Digest()
-	EncodingDigest   crypto.Digest  `codec:"encdig"` // = crypto.HashObj(proposal)
+	BlockDigest       crypto.Digest  `codec:"dig"`    // = proposal.Block.Digest()
+	EncodingDigest    crypto.Digest  `codec:"encdig"` // = crypto.HashObj(proposal)
 }
 
 // A transmittedPayload is the representation of a proposal payload on the wire.

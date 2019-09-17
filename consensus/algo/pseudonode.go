@@ -181,10 +181,10 @@ func (n asyncPseudonode) MakeVotes(ctx context.Context, r round, p period, s ste
 func (n asyncPseudonode) makeProposalsTask(ctx context.Context, r round, p period) pseudonodeProposalsTask {
 	pt := pseudonodeProposalsTask{
 		pseudonodeBaseTask: pseudonodeBaseTask{
-			node:          &n,
-			context:       ctx,
-			out:           make(chan externalEvent),
-			key:           n.key,
+			node:    &n,
+			context: ctx,
+			out:     make(chan externalEvent),
+			key:     n.key,
 		},
 		round:  r,
 		period: p,
@@ -195,10 +195,10 @@ func (n asyncPseudonode) makeProposalsTask(ctx context.Context, r round, p perio
 func (n asyncPseudonode) makeVotesTask(ctx context.Context, r round, p period, s step, prop proposalValue, persistStateDone chan error) pseudonodeVotesTask {
 	pvt := pseudonodeVotesTask{
 		pseudonodeBaseTask: pseudonodeBaseTask{
-			node:          &n,
-			context:       ctx,
-			out:           make(chan externalEvent),
-			key:           n.key,
+			node:    &n,
+			context: ctx,
+			out:     make(chan externalEvent),
+			key:     n.key,
 		},
 		round:            r,
 		period:           p,
@@ -239,14 +239,14 @@ func (n asyncPseudonode) makeProposals(round basics.Round, period period) ([]pro
 	votes := make([]unauthenticatedVote, 0)
 	proposals := make([]proposal, 0)
 	payload, proposal, err := n.factory.AssembleProposal(round, period)
-	if err != nil{
+	if err != nil {
 		n.log.Errorf("pseudonode.makeProposals: could not generate a proposal for round %v: %v", round, err)
 		return nil, nil
 	}
 	proposals = append(proposals, *payload)
 	//attempt to make the vote
 	addr := crypto2.PubkeyToAddress(n.key.PublicKey)
-	rv := rawVote{From:addr, Round: round, Period: period, Step: propose, Proposal: *proposal}
+	rv := rawVote{From: addr, Round: round, Period: period, Step: propose, Proposal: *proposal}
 	uv, err := makeVote(rv, n.key, n.ledger)
 	if err != nil {
 		n.log.Warnf("pseudonode.makeProposals: could not create vote: %v", err)
@@ -262,7 +262,7 @@ func (n asyncPseudonode) makeProposals(round basics.Round, period period) ([]pro
 func (n asyncPseudonode) makeVotes(round basics.Round, period period, step step, proposal proposalValue) []unauthenticatedVote {
 	votes := make([]unauthenticatedVote, 0)
 	addr := crypto2.PubkeyToAddress(n.key.PublicKey)
-	rv := rawVote{From:addr, Round: round, Period: period, Step: step, Proposal: proposal}
+	rv := rawVote{From: addr, Round: round, Period: period, Step: step, Proposal: proposal}
 	uv, err := makeVote(rv, n.key, n.ledger)
 	if err != nil {
 		n.log.Warnf("pseudonode.makeVotes: could not create vote: %v", err)

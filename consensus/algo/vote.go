@@ -33,7 +33,7 @@ type (
 	// rawVote is the inner struct which is authenticated with keys
 	rawVote struct {
 		_struct  struct{}       `codec:",omitempty,omitemptyarray"`
-		From common.Address `codec:"from"`
+		From     common.Address `codec:"from"`
 		Sender   basics.Address `codec:"snd"`
 		Round    basics.Round   `codec:"rnd"`
 		Period   period         `codec:"per"`
@@ -43,19 +43,19 @@ type (
 
 	// unauthenticatedVote is a vote which has not been verified
 	unauthenticatedVote struct {
-		_struct struct{}                            `codec:",omitempty,omitemptyarray"`
-		R       rawVote                             `codec:"r"`
-		Cred    committee.UnauthenticatedCredential `codec:"cred"`
-		Sig     crypto.OneTimeSignature             `codec:"sig,omitempty,omitemptycheckstruct"`
-		SignatureInfo crypto2.S256SignatureInfo `codec:"signature,omitempty,omitemptycheckstruct"`
+		_struct       struct{}                            `codec:",omitempty,omitemptyarray"`
+		R             rawVote                             `codec:"r"`
+		Cred          committee.UnauthenticatedCredential `codec:"cred"`
+		Sig           crypto.OneTimeSignature             `codec:"sig,omitempty,omitemptycheckstruct"`
+		SignatureInfo crypto2.S256SignatureInfo           `codec:"signature,omitempty,omitemptycheckstruct"`
 	}
 
 	// A vote is an endorsement of a particular proposal in Xchain
 	vote struct {
-		_struct struct{}                `codec:",omitempty,omitemptyarray"`
-		R       rawVote                 `codec:"r"`
-		Cred    committee.Credential    `codec:"cred"`
-		Sig     crypto.OneTimeSignature `codec:"sig,omitempty,omitemptycheckstruct"`
+		_struct       struct{}                  `codec:",omitempty,omitemptyarray"`
+		R             rawVote                   `codec:"r"`
+		Cred          committee.Credential      `codec:"cred"`
+		Sig           crypto.OneTimeSignature   `codec:"sig,omitempty,omitemptycheckstruct"`
 		SignatureInfo crypto2.S256SignatureInfo `codec:"signature,omitempty,omitemptycheckstruct"`
 	}
 
@@ -184,11 +184,11 @@ func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
 	}
 	pubKey := crypto2.ToECDSAPub(uv.SignatureInfo.Pub[:])
 	addr := crypto2.PubkeyToAddress(*pubKey)
-	if addr != rv.From{
+	if addr != rv.From {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
 	}
 	ok := crypto2.VerifySignature(uv.SignatureInfo.Pub[:], util.HashRep(rv), uv.SignatureInfo.Sig[:])
-	if !ok{
+	if !ok {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
 	}
 	//ephID := basics.OneTimeIDForRound(rv.Round, m.Record.KeyDilution(proto))
@@ -240,7 +240,7 @@ func makeVote(rv rawVote, sk *vrf.PrivateKey, l Ledger) (unauthenticatedVote, er
 	}
 	hash := util.HashRep(rv)
 	sig, err := crypto2.Sign(hash, sk.PrivateKey)
-	if err != nil{
+	if err != nil {
 		return unauthenticatedVote{}, err
 	}
 	signatureInfo := crypto2.S256SignatureInfo{}

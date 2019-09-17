@@ -103,7 +103,7 @@ type AccountData struct {
 
 	VoteID      crypto.OneTimeSignatureVerifier `codec:"vote"`
 	SelectionID crypto.VRFVerifier              `codec:"sel"`
-	PublicKey      crypto2.S256PublicKey         `codec:"sel"`
+	PublicKey   crypto2.S256PublicKey           `codec:"sel"`
 
 	VoteFirstValid  Round  `codec:"voteFst"`
 	VoteLastValid   Round  `codec:"voteLst"`
@@ -275,7 +275,7 @@ func (u AccountData) IsZero() bool {
 type BalanceRecord struct {
 	_struct struct{} `codec:",omitempty,omitemptyarray"`
 
-	Addr Address `codec:"addr"`
+	Addr  Address        `codec:"addr"`
 	Addr2 common.Address `codec:"address"`
 
 	AccountData

@@ -19,9 +19,9 @@ package committee
 import (
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
-	crypto2 "github.com/awesome-chain/Xchain/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
 )
 
 // A Selector deterministically defines a cryptographic sortition committee. It
@@ -41,7 +41,7 @@ type Selector interface {
 type Membership struct {
 	Record     basics.BalanceRecord
 	Selector   Selector
-	PublicKey crypto2.S256PublicKey
+	PublicKey  crypto2.S256PublicKey
 	TotalMoney basics.MicroAlgos
 }
 

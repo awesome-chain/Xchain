@@ -40,7 +40,7 @@ type (
 	UnauthenticatedCredential struct {
 		_struct struct{}        `codec:",omitempty,omitemptyarray"`
 		Proof   crypto.VrfProof `codec:"pf"`
-		Proof2 vrf.Proof `codec:"proof"`
+		Proof2  vrf.Proof       `codec:"proof"`
 	}
 
 	// A Credential represents a proof of committee membership.
@@ -56,7 +56,7 @@ type (
 		_struct struct{}      `codec:",omitempty,omitemptyarray"`
 		Weight  uint64        `codec:"wt"`
 		VrfOut  crypto.Digest `codec:"h"`
-		VrfOut2  vrf.Output `codec:"output"`
+		VrfOut2 vrf.Output    `codec:"output"`
 
 		DomainSeparationEnabled bool               `codec:"ds"`
 		Hashable                hashableCredential `codec:"hc"`
@@ -67,9 +67,9 @@ type (
 	hashableCredential struct {
 		_struct struct{}         `codec:",omitempty,omitemptyarray"`
 		RawOut  crypto.VrfOutput `codec:"v"`
-		RawOut2 vrf.Output `codec:"output"`
+		RawOut2 vrf.Output       `codec:"output"`
 		Member  basics.Address   `codec:"m"`
-		Member2  common.Address   `codec:"address"`
+		Member2 common.Address   `codec:"address"`
 		Iter    uint64           `codec:"i"`
 	}
 )
@@ -133,10 +133,10 @@ func (cred UnauthenticatedCredential) Verify(proto config.ConsensusParams, m Mem
 
 func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Membership) (res Credential, err error) {
 	selectionKey := &vrf.PublicKey{
-		PublicKey:crypto2.ToECDSAPub(m.Record.PublicKey[:]),
+		PublicKey: crypto2.ToECDSAPub(m.Record.PublicKey[:]),
 	}
 	vrfOut, err := selectionKey.ProofToHash(cred.Proof2[:], util.HashRep(m.Selector))
-	if vrfOut == vrf.EmptyOutput{
+	if vrfOut == vrf.EmptyOutput {
 		err = fmt.Errorf("UnauthenticatedCredential.Verify: could not verify VRF Proof with %v (parameters = %+v, proof = %#v)", selectionKey, m, cred.Proof)
 		return
 	}
@@ -176,7 +176,7 @@ func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Me
 	} else {
 		res = Credential{
 			UnauthenticatedCredential: cred,
-			VrfOut2:                    vrf.Output(h),
+			VrfOut2:                   vrf.Output(h),
 			Weight:                    weight,
 			DomainSeparationEnabled:   proto.CredentialDomainSeparationEnabled,
 		}
