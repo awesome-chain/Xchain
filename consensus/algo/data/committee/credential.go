@@ -19,14 +19,19 @@ package committee
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/awesome-chain/Xchain/common"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/committee/sortition"
+	"github.com/awesome-chain/Xchain/consensus/algo/util"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"math/big"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
-	"github.com/awesome-chain/Xchain/consensus/algo/data/committee/sortition"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
+	sortition2 "github.com/awesome-chain/Xchain/crypto/sortition"
 )
 
 type (
@@ -35,6 +40,7 @@ type (
 	UnauthenticatedCredential struct {
 		_struct struct{}        `codec:",omitempty,omitemptyarray"`
 		Proof   crypto.VrfProof `codec:"pf"`
+		Proof2 vrf.Proof `codec:"proof"`
 	}
 
 	// A Credential represents a proof of committee membership.
@@ -50,6 +56,7 @@ type (
 		_struct struct{}      `codec:",omitempty,omitemptyarray"`
 		Weight  uint64        `codec:"wt"`
 		VrfOut  crypto.Digest `codec:"h"`
+		VrfOut2  vrf.Output `codec:"output"`
 
 		DomainSeparationEnabled bool               `codec:"ds"`
 		Hashable                hashableCredential `codec:"hc"`
@@ -60,7 +67,9 @@ type (
 	hashableCredential struct {
 		_struct struct{}         `codec:",omitempty,omitemptyarray"`
 		RawOut  crypto.VrfOutput `codec:"v"`
+		RawOut2 vrf.Output `codec:"output"`
 		Member  basics.Address   `codec:"m"`
+		Member2  common.Address   `codec:"address"`
 		Iter    uint64           `codec:"i"`
 	}
 )
@@ -122,6 +131,62 @@ func (cred UnauthenticatedCredential) Verify(proto config.ConsensusParams, m Mem
 	return
 }
 
+func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Membership) (res Credential, err error) {
+	selectionKey := &vrf.PublicKey{
+		PublicKey:crypto2.ToECDSAPub(m.Record.PublicKey[:]),
+	}
+	vrfOut, err := selectionKey.ProofToHash(cred.Proof2[:], util.HashRep(m.Selector))
+	if vrfOut == vrf.EmptyOutput{
+		err = fmt.Errorf("UnauthenticatedCredential.Verify: could not verify VRF Proof with %v (parameters = %+v, proof = %#v)", selectionKey, m, cred.Proof)
+		return
+	}
+
+	hashable := hashableCredential{
+		RawOut2: vrfOut,
+		Member2: m.Record.Addr2,
+	}
+
+	// Also hash in the address. This is necessary to decorrelate the selection of different accounts that have the same VRF key.
+	var h crypto.Digest
+	if proto.CredentialDomainSeparationEnabled {
+		h = crypto.HashObj(hashable)
+	} else {
+		h = crypto.Hash(append(vrfOut[:], m.Record.Addr2[:]...))
+	}
+
+	if err != nil {
+		err = fmt.Errorf("UnauthenticatedCredential.Verify: could not verify VRF Proof with %v (parameters = %+v, proof = %#v)", selectionKey, m, cred.Proof)
+		return
+	}
+
+	var weight uint64
+	userMoney := m.Record.VotingStake()
+	expectedSelection := float64(m.Selector.CommitteeSize(proto))
+
+	if m.TotalMoney.Raw < userMoney.Raw {
+		logging.Base().Panicf("UnauthenticatedCredential.Verify: total money = %v, but user money = %v", m.TotalMoney, userMoney)
+	} else if m.TotalMoney.IsZero() || expectedSelection == 0 || expectedSelection > float64(m.TotalMoney.Raw) {
+		logging.Base().Panicf("UnauthenticatedCredential.Verify: m.TotalMoney %v, expectedSelection %v", m.TotalMoney.Raw, expectedSelection)
+	} else if !userMoney.IsZero() {
+		weight = sortition2.Select(userMoney.Raw, m.TotalMoney.Raw, expectedSelection, h)
+	}
+
+	if weight == 0 {
+		err = fmt.Errorf("UnauthenticatedCredential.Verify: credential has weight 0")
+	} else {
+		res = Credential{
+			UnauthenticatedCredential: cred,
+			VrfOut2:                    vrf.Output(h),
+			Weight:                    weight,
+			DomainSeparationEnabled:   proto.CredentialDomainSeparationEnabled,
+		}
+		if res.DomainSeparationEnabled {
+			res.Hashable = hashable
+		}
+	}
+	return
+}
+
 // MakeCredential creates a new unauthenticated Credential given some selector.
 func MakeCredential(secrets *crypto.VrfPrivkey, sel Selector) UnauthenticatedCredential {
 	pf, ok := secrets.Prove(sel)
@@ -130,6 +195,15 @@ func MakeCredential(secrets *crypto.VrfPrivkey, sel Selector) UnauthenticatedCre
 		return UnauthenticatedCredential{}
 	}
 	return UnauthenticatedCredential{Proof: pf}
+}
+
+// MakeCredential creates a new unauthenticated Credential given some selector.
+func MakeCredential2(sk *vrf.PrivateKey, sel Selector) UnauthenticatedCredential {
+	var pf vrf.Proof
+	hash := util.HashRep(sel)
+	_, proof := sk.Evaluate(hash)
+	copy(pf[:], proof)
+	return UnauthenticatedCredential{Proof2: pf}
 }
 
 // Less returns true if this Credential is less than the other credential; false

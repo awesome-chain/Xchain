@@ -17,12 +17,14 @@
 package basics
 
 import (
+	"github.com/awesome-chain/Xchain/common"
 	"reflect"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
 )
 
 // Status is the delegation status of an account's MicroAlgos
@@ -101,6 +103,7 @@ type AccountData struct {
 
 	VoteID      crypto.OneTimeSignatureVerifier `codec:"vote"`
 	SelectionID crypto.VRFVerifier              `codec:"sel"`
+	PublicKey      crypto2.S256PublicKey         `codec:"sel"`
 
 	VoteFirstValid  Round  `codec:"voteFst"`
 	VoteLastValid   Round  `codec:"voteLst"`
@@ -273,6 +276,7 @@ type BalanceRecord struct {
 	_struct struct{} `codec:",omitempty,omitemptyarray"`
 
 	Addr Address `codec:"addr"`
+	Addr2 common.Address `codec:"address"`
 
 	AccountData
 }

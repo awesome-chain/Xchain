@@ -18,18 +18,22 @@ package algo
 
 import (
 	"fmt"
-
+	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
+	"github.com/awesome-chain/Xchain/consensus/algo/util"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 )
 
 type (
 	// rawVote is the inner struct which is authenticated with keys
 	rawVote struct {
 		_struct  struct{}       `codec:",omitempty,omitemptyarray"`
+		From common.Address `codec:"from"`
 		Sender   basics.Address `codec:"snd"`
 		Round    basics.Round   `codec:"rnd"`
 		Period   period         `codec:"per"`
@@ -43,6 +47,7 @@ type (
 		R       rawVote                             `codec:"r"`
 		Cred    committee.UnauthenticatedCredential `codec:"cred"`
 		Sig     crypto.OneTimeSignature             `codec:"sig,omitempty,omitemptycheckstruct"`
+		SignatureInfo crypto2.S256SignatureInfo `codec:"signature,omitempty,omitemptycheckstruct"`
 	}
 
 	// A vote is an endorsement of a particular proposal in Xchain
@@ -51,6 +56,7 @@ type (
 		R       rawVote                 `codec:"r"`
 		Cred    committee.Credential    `codec:"cred"`
 		Sig     crypto.OneTimeSignature `codec:"sig,omitempty,omitemptycheckstruct"`
+		SignatureInfo crypto2.S256SignatureInfo `codec:"signature,omitempty,omitemptycheckstruct"`
 	}
 
 	// unauthenticatedEquivocationVote is a pair of votes which has not
@@ -138,14 +144,75 @@ func (uv unauthenticatedVote) verify(l LedgerReader) (vote, error) {
 	return vote{R: rv, Cred: cred, Sig: uv.Sig}, nil
 }
 
+// verify verifies that a vote that was received from the network is valid.
+func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
+	rv := uv.R
+	m, err := membership(l, rv.Sender, rv.Round, rv.Period, rv.Step)
+	if err != nil {
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not get membership parameters: %v", err)
+	}
+
+	switch rv.Step {
+	case propose:
+		if rv.Period == rv.Proposal.OriginalPeriod && rv.From != rv.Proposal.OriginalProposer2 {
+			return vote{}, fmt.Errorf("unauthenticatedVote.verify: proposal-vote sender mismatches with proposal-value: %v != %v", rv.Sender, rv.Proposal.OriginalProposer)
+		}
+		// The following check could apply to all steps, but it's sufficient to only check in the propose step.
+		if rv.Proposal.OriginalPeriod > rv.Period {
+			return vote{}, fmt.Errorf("unauthenticatedVote.verify: proposal-vote in period %v claims to repropose block from future period %v", rv.Period, rv.Proposal.OriginalPeriod)
+		}
+		fallthrough
+	case soft:
+		fallthrough
+	case cert:
+		if rv.Proposal == bottom {
+			return vote{}, fmt.Errorf("unauthenticatedVote.verify: votes from step %v cannot validate bottom", rv.Step)
+		}
+	}
+
+	proto, err := l.ConsensusParams(ParamsRound(rv.Round))
+	if err != nil {
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not get consensus params for round %d: %v", ParamsRound(rv.Round), err)
+	}
+
+	if rv.Round < m.Record.VoteFirstValid {
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: vote by %v in round %d before VoteFirstValid %d: %+v", rv.Sender, rv.Round, m.Record.VoteFirstValid, uv)
+	}
+
+	if m.Record.VoteLastValid != 0 && rv.Round > m.Record.VoteLastValid {
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: vote by %v in round %d after VoteLastValid %d: %+v", rv.Sender, rv.Round, m.Record.VoteLastValid, uv)
+	}
+	pubKey := crypto2.ToECDSAPub(uv.SignatureInfo.Pub[:])
+	addr := crypto2.PubkeyToAddress(*pubKey)
+	if addr != rv.From{
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
+	}
+	ok := crypto2.VerifySignature(uv.SignatureInfo.Pub[:], util.HashRep(rv), uv.SignatureInfo.Sig[:])
+	if !ok{
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
+	}
+	//ephID := basics.OneTimeIDForRound(rv.Round, m.Record.KeyDilution(proto))
+	//voteID := m.Record.VoteID
+	//if !voteID.Verify(ephID, rv, uv.Sig) {
+	//	return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, voteID, uv)
+	//}
+	cred, err := uv.Cred.Verify2(proto, m)
+	if err != nil {
+		return vote{}, fmt.Errorf("unauthenticatedVote.verify: got a vote, but sender was not selected: %v", err)
+	}
+
+	return vote{R: rv, Cred: cred, SignatureInfo: uv.SignatureInfo}, nil
+}
+
 // makeVote creates a new unauthenticated vote from its constituent components.
 //
 // makeVote returns an error it it fails.
-func makeVote(rv rawVote, voting crypto.OneTimeSigner, selection *crypto.VRFSecrets, l Ledger) (unauthenticatedVote, error) {
+func makeVote(rv rawVote, sk *vrf.PrivateKey, l Ledger) (unauthenticatedVote, error) {
 	m, err := membership(l, rv.Sender, rv.Round, rv.Period, rv.Step)
 	if err != nil {
 		return unauthenticatedVote{}, fmt.Errorf("makeVote: could not get membership parameters: %v", err)
 	}
+	copy(m.Record.PublicKey[:], crypto2.FromECDSAPub(&sk.PrivateKey.PublicKey))
 
 	proto, err := l.ConsensusParams(ParamsRound(rv.Round))
 	if err != nil {
@@ -171,15 +238,16 @@ func makeVote(rv rawVote, voting crypto.OneTimeSigner, selection *crypto.VRFSecr
 			}
 		}
 	}
-
-	ephID := basics.OneTimeIDForRound(rv.Round, voting.KeyDilution(proto))
-	sig := voting.Sign(ephID, rv)
-	if (sig == crypto.OneTimeSignature{}) {
-		return unauthenticatedVote{}, fmt.Errorf("makeVote: got back empty signature for vote")
+	hash := util.HashRep(rv)
+	sig, err := crypto2.Sign(hash, sk.PrivateKey)
+	if err != nil{
+		return unauthenticatedVote{}, err
 	}
-
-	cred := committee.MakeCredential(&selection.SK, m.Selector)
-	return unauthenticatedVote{R: rv, Cred: cred, Sig: sig}, nil
+	signatureInfo := crypto2.S256SignatureInfo{}
+	copy(signatureInfo.Sig[:], sig)
+	copy(signatureInfo.Pub[:], crypto2.FromECDSAPub(&sk.PrivateKey.PublicKey))
+	cred := committee.MakeCredential2(sk, m.Selector)
+	return unauthenticatedVote{R: rv, Cred: cred, SignatureInfo: signatureInfo}, nil
 }
 
 // ToBeHashed implements the Hashable interface.

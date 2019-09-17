@@ -39,6 +39,13 @@ var (
 	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
+type S256Signature [65]byte
+type S256PublicKey [65]byte
+type S256SignatureInfo struct {
+	Sig S256Signature
+	Pub S256PublicKey
+}
+
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
 	d := sha3.NewKeccak256()

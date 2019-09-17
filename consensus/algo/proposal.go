@@ -19,6 +19,7 @@ package algo
 import (
 	"context"
 	"fmt"
+	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
@@ -37,6 +38,7 @@ type proposalValue struct {
 
 	OriginalPeriod   period         `codec:"oper"`
 	OriginalProposer basics.Address `codec:"oprop"`
+	OriginalProposer2 common.Address `codec:"oriprop"`
 	BlockDigest      crypto.Digest  `codec:"dig"`    // = proposal.Block.Digest()
 	EncodingDigest   crypto.Digest  `codec:"encdig"` // = crypto.HashObj(proposal)
 }

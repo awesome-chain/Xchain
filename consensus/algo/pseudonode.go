@@ -19,6 +19,7 @@ package algo
 import (
 	"context"
 	"fmt"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"sync"
 	"time"
@@ -154,11 +155,6 @@ func (n asyncPseudonode) Quit() {
 func (n asyncPseudonode) MakeProposals(ctx context.Context, r round, p period) (<-chan externalEvent, error) {
 	proposalTask := n.makeProposalsTask(ctx, r, p)
 
-	if len(proposalTask.participation) == 0 {
-		// no proposals are generated as there are no participation keys.
-		return proposalTask.out, errPseudonodeNoProposals
-	}
-
 	n.monitor.inc(pseudonodeCoserviceType)
 	select {
 	case n.proposalsVerifier.incomingTasks <- proposalTask:
@@ -171,10 +167,6 @@ func (n asyncPseudonode) MakeProposals(ctx context.Context, r round, p period) (
 
 func (n asyncPseudonode) MakeVotes(ctx context.Context, r round, p period, s step, prop proposalValue, persistStateDone chan error) (chan externalEvent, error) {
 	proposalTask := n.makeVotesTask(ctx, r, p, s, prop, persistStateDone)
-	if len(proposalTask.participation) == 0 {
-		// no votes are generated as there are no participation keys.
-		return proposalTask.out, errPseudonodeNoVotes
-	}
 
 	n.monitor.inc(pseudonodeCoserviceType)
 	select {
@@ -187,33 +179,24 @@ func (n asyncPseudonode) MakeVotes(ctx context.Context, r round, p period, s ste
 }
 
 func (n asyncPseudonode) makeProposalsTask(ctx context.Context, r round, p period) pseudonodeProposalsTask {
-	participation := n.getParticipations("asyncPseudonode.makeProposalsTask", r)
-
 	pt := pseudonodeProposalsTask{
 		pseudonodeBaseTask: pseudonodeBaseTask{
 			node:          &n,
 			context:       ctx,
-			participation: participation,
 			out:           make(chan externalEvent),
 			key:           n.key,
 		},
 		round:  r,
 		period: p,
 	}
-	if len(participation) == 0 {
-		close(pt.out)
-	}
 	return pt
 }
 
 func (n asyncPseudonode) makeVotesTask(ctx context.Context, r round, p period, s step, prop proposalValue, persistStateDone chan error) pseudonodeVotesTask {
-	participation := n.getParticipations("asyncPseudonode.makeVotesTask", r)
-
 	pvt := pseudonodeVotesTask{
 		pseudonodeBaseTask: pseudonodeBaseTask{
 			node:          &n,
 			context:       ctx,
-			participation: participation,
 			out:           make(chan externalEvent),
 			key:           n.key,
 		},
@@ -222,9 +205,6 @@ func (n asyncPseudonode) makeVotesTask(ctx context.Context, r round, p period, s
 		step:             s,
 		prop:             prop,
 		persistStateDone: persistStateDone,
-	}
-	if len(participation) == 0 {
-		close(pvt.out)
 	}
 	return pvt
 }
@@ -255,52 +235,40 @@ func (n asyncPseudonode) getParticipations(procName string, round basics.Round) 
 }
 
 // makeProposals creates a slice of block proposals for the given round and period.
-func (n asyncPseudonode) makeProposals(round basics.Round, period period, accounts []account.Participation) ([]proposal, []unauthenticatedVote) {
-	deadline := time.Now().Add(AssemblyTime)
-	ve, err := n.factory.AssembleBlock(round, deadline)
-	if err != nil {
+func (n asyncPseudonode) makeProposals(round basics.Round, period period) ([]proposal, []unauthenticatedVote) {
+	votes := make([]unauthenticatedVote, 0)
+	proposals := make([]proposal, 0)
+	payload, proposal, err := n.factory.AssembleProposal(round, period)
+	if err != nil{
 		n.log.Errorf("pseudonode.makeProposals: could not generate a proposal for round %v: %v", round, err)
 		return nil, nil
 	}
-
-	votes := make([]unauthenticatedVote, 0, len(accounts))
-	proposals := make([]proposal, 0, len(accounts))
-	for _, account := range accounts {
-		payload, proposal, err := proposalForBlock(account.Address(), account.VRFSecrets(), ve, period, n.ledger)
-		if err != nil {
-			n.log.Errorf("pseudonode.makeProposals: could not create proposal for block (address %v): %v", account.Address(), err)
-			continue
-		}
-
-		// attempt to make the vote
-		rv := rawVote{Sender: account.Address(), Round: round, Period: period, Step: propose, Proposal: proposal}
-		uv, err := makeVote(rv, account.VotingSigner(), account.VRFSecrets(), n.ledger)
-		if err != nil {
-			n.log.Warnf("pseudonode.makeProposals: could not create vote: %v", err)
-			continue
-		}
-
-		// create the block proposal
-		proposals = append(proposals, payload)
-		votes = append(votes, uv)
+	proposals = append(proposals, *payload)
+	//attempt to make the vote
+	addr := crypto2.PubkeyToAddress(n.key.PublicKey)
+	rv := rawVote{From:addr, Round: round, Period: period, Step: propose, Proposal: *proposal}
+	uv, err := makeVote(rv, n.key, n.ledger)
+	if err != nil {
+		n.log.Warnf("pseudonode.makeProposals: could not create vote: %v", err)
+		return nil, nil
 	}
-
+	// create the block proposal
+	votes = append(votes, uv)
 	return proposals, votes
 }
 
 // makeVotes creates a slice of votes for a given proposal value in a given
 // round, period, and step.
-func (n asyncPseudonode) makeVotes(round basics.Round, period period, step step, proposal proposalValue, participation []account.Participation) []unauthenticatedVote {
+func (n asyncPseudonode) makeVotes(round basics.Round, period period, step step, proposal proposalValue) []unauthenticatedVote {
 	votes := make([]unauthenticatedVote, 0)
-	for _, account := range participation {
-		rv := rawVote{Sender: account.Address(), Round: round, Period: period, Step: step, Proposal: proposal}
-		uv, err := makeVote(rv, account.VotingSigner(), account.VRFSecrets(), n.ledger)
-		if err != nil {
-			n.log.Warnf("pseudonode.makeVotes: could not create vote: %v", err)
-			continue
-		}
-		votes = append(votes, uv)
+	addr := crypto2.PubkeyToAddress(n.key.PublicKey)
+	rv := rawVote{From:addr, Round: round, Period: period, Step: step, Proposal: proposal}
+	uv, err := makeVote(rv, n.key, n.ledger)
+	if err != nil {
+		n.log.Warnf("pseudonode.makeVotes: could not create vote: %v", err)
+		return votes
 	}
+	votes = append(votes, uv)
 	return votes
 }
 
@@ -343,7 +311,7 @@ func (t pseudonodeVotesTask) execute(verifier *AsyncVoteVerifier, quit chan stru
 		return
 	}
 
-	unverifiedVotes := t.node.makeVotes(t.round, t.period, t.step, t.prop, t.participation)
+	unverifiedVotes := t.node.makeVotes(t.round, t.period, t.step, t.prop)
 	t.node.log.Infof("pseudonode: made %v votes", len(unverifiedVotes))
 	results := make(chan asyncVerifyVoteResponse, len(unverifiedVotes))
 	for i, uv := range unverifiedVotes {
@@ -436,7 +404,7 @@ func (t pseudonodeProposalsTask) execute(verifier *AsyncVoteVerifier, quit chan 
 		return
 	}
 
-	payloads, votes := t.node.makeProposals(t.round, t.period, t.participation)
+	payloads, votes := t.node.makeProposals(t.round, t.period)
 	fields := logging.Fields{
 		"Context":      "Agreement",
 		"Type":         logspec.ProposalAssembled.String(),

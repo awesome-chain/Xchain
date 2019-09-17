@@ -17,6 +17,7 @@
 package util
 
 import (
+	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
 	"syscall"
 )
 
@@ -36,4 +37,17 @@ func RaiseRlimit(amount uint64) error {
 		return err
 	}
 	return nil
+}
+
+
+// Hashable is an interface implemented by an object that can be represented
+// with a sequence of bytes to be hashed or signed, together with a type ID
+// to distinguish different types of objects.
+type Hashable interface {
+	ToBeHashed() (protocol.HashID, []byte)
+}
+
+func HashRep(h Hashable) []byte {
+	hashid, data := h.ToBeHashed()
+	return append([]byte(hashid), data...)
 }
