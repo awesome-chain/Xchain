@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/bookkeeping"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
@@ -56,7 +57,8 @@ type unauthenticatedProposal struct {
 	_struct struct{} `codec:",omitempty,omitemptyarray"`
 
 	bookkeeping.Block
-	SeedProof crypto.VrfProof `codec:"sdpf"`
+	SeedProof  crypto.VrfProof `codec:"sdpf"`
+	SeedProof2 vrf.Proof       `codec:"seedpf"`
 
 	OriginalPeriod   period         `codec:"oper"`
 	OriginalProposer basics.Address `codec:"oprop"`
