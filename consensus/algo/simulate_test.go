@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/awesome-chain/Xchain/common"
+	crypto2 "github.com/awesome-chain/Xchain/crypto"
+	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"math/rand"
 	"os"
 	"strconv"
@@ -96,7 +98,22 @@ func (f testBlockFactory) AssembleBlock(r basics.Round, deadline time.Time) (Val
 	return nil, nil
 }
 
-func (f testBlockFactory) AssembleProposal(basics.Round, period) (*proposal, *proposalValue, error){
+func (f testBlockFactory) AssembleProposal(vrfSK *vrf.PrivateKey, round basics.Round, period period, leger LedgerReader) (*proposal, *proposalValue, error){
+	address := crypto2.PubkeyToAddress(vrfSK.PrivateKey.PublicKey)
+	newSeed, seedProof, err := DeriveNewSeed2(address, vrfSK, round, period, leger)
+	if err != nil {
+		return nil, nil, err
+	}
+	makeProposal2()
+	header.Seed = newSeed
+	//hash := header.HashNoSig()
+	//sig, err := crypto.Sign(hash[:], vrfSK.PrivateKey)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//header.Sig = sig
+	b := types.NewBlock(header, nil, nil, nil)
+	p := MakeProposal(b, seedProof[:], 0, &key.PublicKey)
 	return nil, nil, nil
 }
 
