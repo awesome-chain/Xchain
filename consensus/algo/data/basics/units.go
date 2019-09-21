@@ -20,6 +20,7 @@ import (
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/go-codec/codec"
+	"math/big"
 )
 
 // RoundInterval is a number of rounds
@@ -29,6 +30,7 @@ type RoundInterval uint64
 // developers to use an overflow-checking library for any arithmetic.
 type MicroAlgos struct {
 	Raw uint64
+	Raw2 *big.Int
 }
 
 // LessThan implements arithmetic comparison for MicroAlgos

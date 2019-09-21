@@ -274,21 +274,38 @@ func (self *StateDB) HasSuicided(addr common.Address) bool {
 
 // AddBalance adds amount to the account associated with addr.
 func (self *StateDB) AddBalance(addr common.Address, amount *big.Int) {
+	if addr == common.TotalSuppyAddress{
+		return
+	}
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.AddBalance(amount)
+		totalSupplyObject := self.GetOrNewStateObject(common.TotalSuppyAddress)
+		if totalSupplyObject != nil{
+			totalSupplyObject.AddBalance(amount)
+		}
 	}
 }
 
 // SubBalance subtracts amount from the account associated with addr.
 func (self *StateDB) SubBalance(addr common.Address, amount *big.Int) {
+	if addr == common.TotalSuppyAddress{
+		return
+	}
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SubBalance(amount)
+		totalSupplyObject := self.GetOrNewStateObject(common.TotalSuppyAddress)
+		if totalSupplyObject != nil{
+			totalSupplyObject.SubBalance(amount)
+		}
 	}
 }
 
 func (self *StateDB) SetBalance(addr common.Address, amount *big.Int) {
+	if addr == common.TotalSuppyAddress{
+		return
+	}
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetBalance(amount)
