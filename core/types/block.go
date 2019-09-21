@@ -84,7 +84,6 @@ type Header struct {
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
 	MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
 	Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`
-	Sig         []byte         `json:"sig"				gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -314,11 +313,6 @@ func (b *Block) Transaction(hash common.Hash) *Transaction {
 }
 
 func (b *Block) Block() *Block {
-	return b
-}
-
-func (b *Block) WithSeed(seed common.Seed) *Block {
-	b.header.Seed = seed
 	return b
 }
 

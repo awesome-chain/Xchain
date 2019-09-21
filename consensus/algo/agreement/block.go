@@ -1,7 +1,6 @@
-package bookkeeping
+package agreement
 
 import (
-	"github.com/awesome-chain/Xchain/consensus/algo/agreement"
 	"github.com/awesome-chain/Xchain/consensus/algo/crypto"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/basics"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
@@ -13,7 +12,7 @@ type Block struct {
 }
 
 //algorand block
-func (b Block) WithSeed(seed committee.Seed) agreement.ValidatedBlock {
+func (b Block) WithSeed(seed committee.Seed) ValidatedBlock {
 	return b
 }
 func (b Block) Digest() crypto.Digest {
