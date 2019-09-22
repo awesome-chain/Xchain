@@ -247,6 +247,7 @@ func (n asyncPseudonode) makeProposals(round basics.Round, period period) ([]pro
 	//attempt to make the vote
 	addr := crypto2.PubkeyToAddress(n.key.PublicKey)
 	rv := rawVote{From: addr, Round: round, Period: period, Step: propose, Proposal: *proposal}
+	//copy(rv.Sender[:], rv.From[:])
 	uv, err := makeVote(rv, n.key, n.ledger)
 	if err != nil {
 		n.log.Warnf("pseudonode.makeProposals: could not create vote: %v", err)

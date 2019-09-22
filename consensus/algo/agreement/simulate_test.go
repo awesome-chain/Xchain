@@ -205,28 +205,30 @@ func (l *testLedger) notify(r basics.Round) {
 }
 
 func (l *testLedger) Seed(r basics.Round) (committee.Seed, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if r >= l.nextRound {
-		err := fmt.Errorf("Seed called on future round: %v > %v! (this is probably a bug)", r, l.nextRound)
-		panic(err)
-	}
-
-	b := l.entries[r]
-	return b.Seed(), nil
+	return committee.Seed{}, nil
+	//l.mu.Lock()
+	//defer l.mu.Unlock()
+	//
+	//if r >= l.nextRound {
+	//	err := fmt.Errorf("Seed called on future round: %v > %v! (this is probably a bug)", r, l.nextRound)
+	//	panic(err)
+	//}
+	//
+	//b := l.entries[r]
+	//return b.Seed(), nil
 }
 
 func (l *testLedger) LookupDigest(r basics.Round) (crypto.Digest, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if r >= l.nextRound {
-		err := fmt.Errorf("Seed called on future round: %v > %v! (this is probably a bug)", r, l.nextRound)
-		panic(err)
-	}
-
-	return l.entries[r].Digest(), nil
+	return crypto.Digest{}, nil
+	//l.mu.Lock()
+	//defer l.mu.Unlock()
+	//
+	//if r >= l.nextRound {
+	//	err := fmt.Errorf("Seed called on future round: %v > %v! (this is probably a bug)", r, l.nextRound)
+	//	panic(err)
+	//}
+	//
+	//return l.entries[r].Digest(), nil
 }
 
 func (l *testLedger) BalanceRecord(r basics.Round, a basics.Address) (basics.BalanceRecord, error) {
@@ -238,6 +240,10 @@ func (l *testLedger) BalanceRecord(r basics.Round, a basics.Address) (basics.Bal
 		panic(err)
 	}
 	return l.state[a], nil
+}
+
+func (l *testLedger) BalanceRecord2(r basics.Round, a common.Address) (basics.BalanceRecord, error) {
+	return basics.BalanceRecord{}, nil
 }
 
 func (l *testLedger) Circulation(r basics.Round) (basics.MicroAlgos, error) {

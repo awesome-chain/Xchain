@@ -24,7 +24,6 @@ import (
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"github.com/awesome-chain/Xchain/consensus/algo/logging"
 	"github.com/awesome-chain/Xchain/consensus/algo/protocol"
-	"github.com/awesome-chain/Xchain/consensus/algo/util"
 	crypto2 "github.com/awesome-chain/Xchain/crypto"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
 )
@@ -187,7 +186,8 @@ func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
 	if addr != rv.From {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
 	}
-	ok := crypto2.VerifySignature(uv.SignatureInfo.Pub[:], util.HashRep(rv), uv.SignatureInfo.Sig[:])
+	hash := crypto.HashObj(rv)
+	ok := crypto2.VerifySignature(uv.SignatureInfo.Pub[:], hash[:], uv.SignatureInfo.Sig[:])
 	if !ok {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, nil, uv)
 	}
@@ -208,7 +208,7 @@ func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
 //
 // makeVote returns an error it it fails.
 func makeVote(rv rawVote, sk *vrf.PrivateKey, l Ledger) (unauthenticatedVote, error) {
-	m, err := membership(l, rv.Sender, rv.Round, rv.Period, rv.Step)
+	m, err := membership2(l, rv.From, rv.Round, rv.Period, rv.Step)
 	if err != nil {
 		return unauthenticatedVote{}, fmt.Errorf("makeVote: could not get membership parameters: %v", err)
 	}
@@ -238,8 +238,9 @@ func makeVote(rv rawVote, sk *vrf.PrivateKey, l Ledger) (unauthenticatedVote, er
 			}
 		}
 	}
-	hash := util.HashRep(rv)
-	sig, err := crypto2.Sign(hash, sk.PrivateKey)
+	//hash := util.HashRep(rv)
+	hash := crypto.HashObj(rv)
+	sig, err := crypto2.Sign(hash[:], sk.PrivateKey)
 	if err != nil {
 		return unauthenticatedVote{}, err
 	}

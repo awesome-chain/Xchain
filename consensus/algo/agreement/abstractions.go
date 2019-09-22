@@ -18,6 +18,7 @@ package agreement
 
 import (
 	"context"
+	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"time"
 
@@ -133,6 +134,7 @@ type LedgerReader interface {
 	// unavailable by the storage device. In that case, the agreement
 	// protocol may lose liveness.
 	BalanceRecord(basics.Round, basics.Address) (basics.BalanceRecord, error)
+	BalanceRecord2(basics.Round, common.Address) (basics.BalanceRecord, error)
 
 	// Circulation returns the total amount of money in circulation at the
 	// conclusion of a given round.
