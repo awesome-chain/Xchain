@@ -102,7 +102,8 @@ func (avv *AsyncVoteVerifier) executeVoteVerification(task interface{}) interfac
 		return &asyncVerifyVoteResponse{err: req.ctx.Err(), cancelled: true, req: &req}
 	default:
 		// request was not cancelled, so we verify it here and return the result on the channel
-		v, err := req.uv.verify(req.l)
+		//v, err := req.uv.verify(req.l)
+		v, err := req.uv.verify2(req.l)
 		req.message.Vote = v
 		return &asyncVerifyVoteResponse{v: v, index: req.index, message: req.message, err: err, req: &req}
 	}

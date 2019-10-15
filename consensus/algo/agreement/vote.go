@@ -146,7 +146,7 @@ func (uv unauthenticatedVote) verify(l LedgerReader) (vote, error) {
 // verify verifies that a vote that was received from the network is valid.
 func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
 	rv := uv.R
-	m, err := membership(l, rv.Sender, rv.Round, rv.Period, rv.Step)
+	m, err := membership2(l, rv.From, rv.Round, rv.Period, rv.Step)
 	if err != nil {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not get membership parameters: %v", err)
 	}
@@ -196,7 +196,7 @@ func (uv unauthenticatedVote) verify2(l LedgerReader) (vote, error) {
 	//if !voteID.Verify(ephID, rv, uv.Sig) {
 	//	return vote{}, fmt.Errorf("unauthenticatedVote.verify: could not verify FS signature on vote by %v given %v: %+v", rv.Sender, voteID, uv)
 	//}
-	cred, err := uv.Cred.Verify2(proto, m)
+	cred, err := uv.Cred.Verify2(proto, m, uv.SignatureInfo.Pub)
 	if err != nil {
 		return vote{}, fmt.Errorf("unauthenticatedVote.verify: got a vote, but sender was not selected: %v", err)
 	}
@@ -244,6 +244,7 @@ func makeVote(rv rawVote, sk *vrf.PrivateKey, l Ledger) (unauthenticatedVote, er
 	if err != nil {
 		return unauthenticatedVote{}, err
 	}
+	sig = sig[:len(sig)-1]
 	signatureInfo := crypto2.S256SignatureInfo{}
 	copy(signatureInfo.Sig[:], sig)
 	copy(signatureInfo.Pub[:], crypto2.FromECDSAPub(&sk.PrivateKey.PublicKey))

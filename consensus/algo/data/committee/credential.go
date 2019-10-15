@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/awesome-chain/Xchain/common"
 	"github.com/awesome-chain/Xchain/consensus/algo/data/committee/sortition"
-	"github.com/awesome-chain/Xchain/consensus/algo/util"
 	"github.com/awesome-chain/Xchain/crypto/vrf"
 	"math/big"
 
@@ -131,19 +130,22 @@ func (cred UnauthenticatedCredential) Verify(proto config.ConsensusParams, m Mem
 	return
 }
 
-func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Membership) (res Credential, err error) {
+func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Membership, pubKey crypto2.S256PublicKey) (res Credential, err error) {
+	pubKey0 := crypto2.ToECDSAPub(pubKey[:])
 	selectionKey := &vrf.PublicKey{
-		PublicKey: crypto2.ToECDSAPub(m.Record.PublicKey[:]),
+		PublicKey: pubKey0,
 	}
-	vrfOut, err := selectionKey.ProofToHash(cred.Proof2[:], util.HashRep(m.Selector))
+	selectorHash := crypto.HashObj(m.Selector)
+	vrfOut, err := selectionKey.ProofToHash(selectorHash[:], cred.Proof2[:])
 	if vrfOut == vrf.EmptyOutput {
 		err = fmt.Errorf("UnauthenticatedCredential.Verify: could not verify VRF Proof with %v (parameters = %+v, proof = %#v)", selectionKey, m, cred.Proof)
 		return
 	}
+	addr := crypto2.PubkeyToAddress(*pubKey0)
 
 	hashable := hashableCredential{
 		RawOut2: vrfOut,
-		Member2: m.Record.Addr2,
+		Member2: addr,
 	}
 
 	// Also hash in the address. This is necessary to decorrelate the selection of different accounts that have the same VRF key.
@@ -151,7 +153,7 @@ func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Me
 	if proto.CredentialDomainSeparationEnabled {
 		h = crypto.HashObj(hashable)
 	} else {
-		h = crypto.Hash(append(vrfOut[:], m.Record.Addr2[:]...))
+		h = crypto.Hash(append(vrfOut[:], addr[:]...))
 	}
 
 	if err != nil {
@@ -161,14 +163,19 @@ func (cred UnauthenticatedCredential) Verify2(proto config.ConsensusParams, m Me
 
 	var weight uint64
 	userMoney := m.Record.VotingStake()
+	//TODO
+	userMoney.Raw2 = big.NewInt(10000)
+	m.TotalMoney.Raw2 = big.NewInt(11000)
+
 	expectedSelection := float64(m.Selector.CommitteeSize(proto))
 
-	if m.TotalMoney.Raw < userMoney.Raw {
+	if m.TotalMoney.Raw2.Cmp(userMoney.Raw2) < 0 {
 		logging.Base().Panicf("UnauthenticatedCredential.Verify: total money = %v, but user money = %v", m.TotalMoney, userMoney)
-	} else if m.TotalMoney.IsZero() || expectedSelection == 0 || expectedSelection > float64(m.TotalMoney.Raw) {
-		logging.Base().Panicf("UnauthenticatedCredential.Verify: m.TotalMoney %v, expectedSelection %v", m.TotalMoney.Raw, expectedSelection)
-	} else if !userMoney.IsZero() {
-		weight = sortition2.Select(userMoney.Raw, m.TotalMoney.Raw, expectedSelection, h)
+	} else if m.TotalMoney.IsZero2() || expectedSelection == 0 || expectedSelection > float64(m.TotalMoney.Raw2.Uint64()) {
+		logging.Base().Panicf("UnauthenticatedCredential.Verify: m.TotalMoney %v, expectedSelection %v", m.TotalMoney.Raw2.Uint64(), expectedSelection)
+	} else if !userMoney.IsZero2() {
+		//TODO
+		weight = sortition2.Select(userMoney.Raw2.Uint64(), m.TotalMoney.Raw2.Uint64(), expectedSelection, h)
 	}
 
 	if weight == 0 {
@@ -200,8 +207,9 @@ func MakeCredential(secrets *crypto.VrfPrivkey, sel Selector) UnauthenticatedCre
 // MakeCredential creates a new unauthenticated Credential given some selector.
 func MakeCredential2(sk *vrf.PrivateKey, sel Selector) UnauthenticatedCredential {
 	var pf vrf.Proof
-	hash := util.HashRep(sel)
-	_, proof := sk.Evaluate(hash)
+	//hash := util.HashRep(sel)
+	hash := crypto.HashObj(sel)
+	_, proof := sk.Evaluate(hash[:])
 	copy(pf[:], proof)
 	return UnauthenticatedCredential{Proof2: pf}
 }

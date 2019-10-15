@@ -39,7 +39,7 @@ var (
 	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
-type S256Signature [65]byte
+type S256Signature [64]byte
 type S256PublicKey [65]byte
 type S256SignatureInfo struct {
 	Sig S256Signature

@@ -48,6 +48,10 @@ func (a MicroAlgos) IsZero() bool {
 	return a.Raw == 0
 }
 
+func (a MicroAlgos) IsZero2() bool {
+	return a.Raw2.Cmp(big.NewInt(0)) == 0
+}
+
 // ToUint64 converts the amount of algos to uint64
 func (a MicroAlgos) ToUint64() uint64 {
 	return a.Raw
