@@ -375,7 +375,7 @@ func (p unauthenticatedProposal) validate2(ctx context.Context, current basics.R
 		return invalid, fmt.Errorf("proposed entry from wrong round: entry.Round() != current: %v != %v", entry.Round(), current)
 	}
 
-	err := verifyNewSeed(p, ledger)
+	err := verifyNewSeed2(p, ledger)
 	if err != nil {
 		return invalid, fmt.Errorf("proposal has bad seed: %v", err)
 	}

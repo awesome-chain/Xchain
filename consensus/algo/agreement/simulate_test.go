@@ -336,7 +336,7 @@ func TestSimulate(t *testing.T) {
 	logging.Base().SetOutput(f)
 	logging.Base().SetLevel(logging.Debug)
 
-	numAccounts := 10
+	numAccounts := 1
 	maxMoneyAtStart := 100001 // max money start
 	minMoneyAtStart := 100000 // max money start
 	E := basics.Round(50)     // max round
