@@ -244,19 +244,31 @@ func (i *networkImplSimulate) Broadcast(t protocol.Tag, data []byte) (err error)
 }
 
 func (i *networkImplSimulate) Relay(h MessageHandle, t protocol.Tag, data []byte) (err error) {
-	metadata := messageMetadataFromHandle(h)
-	if metadata == nil { // synthentic loopback
-		err = i.net.Broadcast(context.Background(), t, data, false, nil)
-		if err != nil {
-			logging.Base().Infof("agreement: could not (pseudo)relay message with tag %v: %v", t, err)
-		}
-	} else {
-		err = i.net.Relay(context.Background(), t, data, false, metadata.raw.Sender)
-		if err != nil {
-			logging.Base().Infof("agreement: could not relay message from %v with tag %v: %v", metadata.raw.Sender, t, err)
-		}
+	msg := network.IncomingMessage{
+	}
+	msg.Tag = t
+	msg.Data = data
+	switch msg.Tag{
+	case protocol.AgreementVoteTag:
+		i.voteCh <- Message{MessageHandle: nil, Data: msg.Data}
+	case protocol.ProposalPayloadTag:
+		i.proposalCh <- Message{MessageHandle: nil, Data: msg.Data}
 	}
 	return
+
+	//metadata := messageMetadataFromHandle(h)
+	//if metadata == nil { // synthentic loopback
+	//	err = i.net.Broadcast(context.Background(), t, data, false, nil)
+	//	if err != nil {
+	//		logging.Base().Infof("agreement: could not (pseudo)relay message with tag %v: %v", t, err)
+	//	}
+	//} else {
+	//	err = i.net.Relay(context.Background(), t, data, false, metadata.raw.Sender)
+	//	if err != nil {
+	//		logging.Base().Infof("agreement: could not relay message from %v with tag %v: %v", metadata.raw.Sender, t, err)
+	//	}
+	//}
+	//return
 }
 
 func (i *networkImplSimulate) Disconnect(h MessageHandle) {
