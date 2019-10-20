@@ -224,7 +224,7 @@ func Simulate(dbname string, n basics.Round, roundDeadline time.Duration, ledger
 		Logger:         log,
 		Accessor:       accessor,
 		Clock:          stopwatch,
-		Network:        WrapNetwork(new(blackhole)),
+		Network:        WrapNetworkSimulate(new(blackhole)),
 		Ledger:         ledger,
 		BlockFactory:   proposalFactory,
 		BlockValidator: proposalValidator,

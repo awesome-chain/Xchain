@@ -336,7 +336,7 @@ func (c *poolCryptoVerifier) verifyProposalPayload(request cryptoRequest) crypto
 	m := request.message
 	up := request.UnauthenticatedProposal
 
-	p, err := up.validate(request.ctx, request.Round, c.ledger, c.validator)
+	p, err := up.validate2(request.ctx, request.Round, c.ledger, c.validator)
 	select {
 	case <-request.ctx.Done():
 		m.Proposal = p

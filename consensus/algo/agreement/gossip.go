@@ -162,3 +162,120 @@ func (i *networkImpl) broadcastTimeout(t protocol.Tag, data []byte, timeout time
 	defer cancel()
 	return i.net.Broadcast(ctx, t, data, true, nil)
 }
+
+// networkImpl wraps network.GossipNode to provide a compatible interface with agreement.
+type networkImplSimulate struct {
+	voteCh     chan Message
+	proposalCh chan Message
+	bundleCh   chan Message
+
+	net network.GossipNode
+}
+
+// WrapNetwork adapts a network.GossipNode into an agreement.Network.
+func WrapNetworkSimulate(net network.GossipNode) Network {
+	i := new(networkImplSimulate)
+
+	i.voteCh = make(chan Message, voteBufferSize)
+	i.proposalCh = make(chan Message, proposalBufferSize)
+	i.bundleCh = make(chan Message, bundleBufferSize)
+
+	i.net = net
+
+	handlers := []network.TaggedMessageHandler{
+		{Tag: protocol.AgreementVoteTag, MessageHandler: network.HandlerFunc(i.processVoteMessage)},
+		{Tag: protocol.ProposalPayloadTag, MessageHandler: network.HandlerFunc(i.processProposalMessage)},
+		{Tag: protocol.VoteBundleTag, MessageHandler: network.HandlerFunc(i.processBundleMessage)},
+	}
+	net.RegisterHandlers(handlers)
+	return i
+}
+
+func (i *networkImplSimulate) processVoteMessage(raw network.IncomingMessage) network.OutgoingMessage {
+	return i.processMessage(raw, i.voteCh)
+}
+
+func (i *networkImplSimulate) processProposalMessage(raw network.IncomingMessage) network.OutgoingMessage {
+	return i.processMessage(raw, i.proposalCh)
+}
+
+func (i *networkImplSimulate) processBundleMessage(raw network.IncomingMessage) network.OutgoingMessage {
+	return i.processMessage(raw, i.bundleCh)
+}
+
+// i.e. process<Type>Message
+func (i *networkImplSimulate) processMessage(raw network.IncomingMessage, submit chan<- Message) network.OutgoingMessage {
+	metadata := &messageMetadata{raw: raw}
+
+	select {
+	case submit <- Message{MessageHandle: MessageHandle(metadata), Data: raw.Data}:
+		// It would be slightly better to measure at de-queue
+		// time, but that happens in many places in code and
+		// this is much easier.
+		messagesHandled.Inc(nil)
+	default:
+		messagesDropped.Inc(nil)
+	}
+
+	// Immediately ignore everything here, sometimes Relay/Broadcast/Disconnect later based on API handles saved from IncomingMessage
+	return network.OutgoingMessage{Action: network.Ignore}
+}
+
+func (i *networkImplSimulate) Messages(t protocol.Tag) <-chan Message {
+	switch t {
+	case protocol.AgreementVoteTag:
+		return i.voteCh
+	case protocol.ProposalPayloadTag:
+		return i.proposalCh
+	case protocol.VoteBundleTag:
+		return i.bundleCh
+	default:
+		logging.Base().Panicf("bad tag! %v", t)
+		return nil
+	}
+}
+
+func (i *networkImplSimulate) Broadcast(t protocol.Tag, data []byte) (err error) {
+	err = i.net.Broadcast(context.Background(), t, data, false, nil)
+	if err != nil {
+		logging.Base().Infof("agreement: could not broadcast message with tag %v: %v", t, err)
+	}
+	return
+}
+
+func (i *networkImplSimulate) Relay(h MessageHandle, t protocol.Tag, data []byte) (err error) {
+	metadata := messageMetadataFromHandle(h)
+	if metadata == nil { // synthentic loopback
+		err = i.net.Broadcast(context.Background(), t, data, false, nil)
+		if err != nil {
+			logging.Base().Infof("agreement: could not (pseudo)relay message with tag %v: %v", t, err)
+		}
+	} else {
+		err = i.net.Relay(context.Background(), t, data, false, metadata.raw.Sender)
+		if err != nil {
+			logging.Base().Infof("agreement: could not relay message from %v with tag %v: %v", metadata.raw.Sender, t, err)
+		}
+	}
+	return
+}
+
+func (i *networkImplSimulate) Disconnect(h MessageHandle) {
+	metadata := messageMetadataFromHandle(h)
+
+	if metadata == nil { // synthentic loopback
+		// TODO warn
+		return
+	}
+
+	i.net.Disconnect(metadata.raw.Sender)
+}
+
+// broadcastTimeout is currently only used by test code.
+// In test code we want to queue up a bunch of outbound packets and then see that they got through, so we need to wait at least a little bit for them to all go out.
+// Normal agreement state machine code uses GossipNode.Broadcast non-blocking and may drop outbound packets.
+func (i *networkImplSimulate) broadcastTimeout(t protocol.Tag, data []byte, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return i.net.Broadcast(ctx, t, data, true, nil)
+}
+
