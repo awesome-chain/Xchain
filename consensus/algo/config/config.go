@@ -397,6 +397,22 @@ func initConsensusProtocols() {
 	v18.ApprovedUpgrades = map[protocol.ConsensusVersion]bool{}
 	Consensus[protocol.ConsensusV18] = v18
 
+	vTest := v17
+	vTest.SoftCommitteeSize = 1
+	vTest.SoftCommitteeThreshold = 1
+	vTest.CertCommitteeSize = 1
+	vTest.CertCommitteeThreshold = 1
+	vTest.NextCommitteeSize = 1
+	vTest.NextCommitteeThreshold = 1
+	vTest.RedoCommitteeSize = 1
+	vTest.RedoCommitteeThreshold = 1
+	vTest.LateCommitteeSize = 1
+	vTest.LateCommitteeThreshold = 1
+	vTest.DownCommitteeSize = 1
+	vTest.DownCommitteeThreshold = 1
+	Consensus[protocol.ConsensusVTest] = vTest
+
+
 	// v17 can be upgraded to v18.
 	// for now, I will leave this gated out.
 	// v17.ApprovedUpgrades[protocol.ConsensusV18] = true

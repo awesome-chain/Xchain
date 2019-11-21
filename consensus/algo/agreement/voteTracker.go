@@ -18,6 +18,7 @@ package agreement
 
 import (
 	"bytes"
+	"github.com/awesome-chain/Xchain/common"
 	"sort"
 
 	"github.com/awesome-chain/Xchain/consensus/algo/config"
@@ -44,6 +45,7 @@ type voteTracker struct {
 	// Voters holds the set of voters which have voted in the current step.
 	// It is used to track whether a voter has equivocated.
 	Voters map[basics.Address]vote
+	Voters2 map[common.Address]vote
 
 	// Counts holds the weighted sum of the votes for a given proposal.
 	// it also hold the individual votes.
@@ -55,6 +57,7 @@ type voteTracker struct {
 	// once.  Future votes from these voters are dropped and not
 	// propagated.
 	Equivocators map[basics.Address]equivocationVote
+	Equivocators2 map[common.Address]equivocationVote
 
 	// EquivocatorsCount holds the number of equivocating votes which count
 	// for any proposal-value.
@@ -112,12 +115,20 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 		if tracker.Voters == nil {
 			tracker.Voters = make(map[basics.Address]vote)
 		}
+		if tracker.Voters2 == nil {
+			tracker.Voters2 = make(map[common.Address]vote)
+		}
 		if tracker.Equivocators == nil {
 			tracker.Equivocators = make(map[basics.Address]equivocationVote)
 		}
+		if tracker.Equivocators2 == nil {
+			tracker.Equivocators2 = make(map[common.Address]equivocationVote)
+		}
 
 		sender := e.Vote.R.Sender
-		eqVote, equivocator := tracker.Equivocators[sender]
+		from := e.Vote.R.From
+		//eqVote, equivocator := tracker.Equivocators[sender]
+		eqVote, equivocator := tracker.Equivocators2[from]
 		if equivocator {
 			equivocationDetails := telemetryspec.EquivocatedVoteEventDetails{
 				VoterAddress:          sender.String(),
@@ -136,11 +147,13 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 
 		_, overBefore := tracker.overThreshold(proto, e.Vote.R.Step)
 
-		oldVote, voted := tracker.Voters[sender]
+		//oldVote, voted := tracker.Voters[sender]
+		oldVote, voted := tracker.Voters2[from]
 
 		if !voted {
 			// not an equivocator, and there's no earlier vote
-			tracker.Voters[sender] = e.Vote
+			//tracker.Voters[sender] = e.Vote
+			tracker.Voters2[from] = e.Vote
 
 			// if we never seen this proposal before, the following would return the default proposalVote
 			proposalVote := tracker.Counts[e.Vote.R.Proposal]
@@ -202,7 +215,16 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 
 			// mark the sender as an equivocator, so we never track its
 			// votes again
-			tracker.Equivocators[sender] = equivocationVote{
+			//tracker.Equivocators[sender] = equivocationVote{
+			//	Sender:    oldVote.R.Sender,
+			//	Round:     oldVote.R.Round,
+			//	Period:    oldVote.R.Period,
+			//	Step:      oldVote.R.Step,
+			//	Cred:      oldVote.Cred,
+			//	Proposals: [2]proposalValue{oldVote.R.Proposal, e.Vote.R.Proposal},
+			//	Sigs:      [2]crypto.OneTimeSignature{oldVote.Sig, e.Vote.Sig},
+			//}
+			tracker.Equivocators2[from] = equivocationVote{
 				Sender:    oldVote.R.Sender,
 				Round:     oldVote.R.Round,
 				Period:    oldVote.R.Period,
@@ -212,7 +234,8 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 				Sigs:      [2]crypto.OneTimeSignature{oldVote.Sig, e.Vote.Sig},
 			}
 			// delete the equivocator from the set of voters
-			delete(tracker.Voters, sender)
+			//delete(tracker.Voters, sender)
+			delete(tracker.Voters2, from)
 
 			// We've just moved the vote around ( regular vote -> equivocator vote ) but that did not
 			// change the total weight. Since the total weight for the proposal in the vote wasn't altered,
@@ -222,7 +245,10 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 			// if we have no regular votes, we won't be generating a bundle so we can abort right here.
 			// note that it migth be a legit thing; if we received two votes from X followed by 100 regular votes,
 			// we would end up here for the second vote.
-			if len(tracker.Voters) == 0 {
+			//if len(tracker.Voters) == 0 {
+			//	return res
+			//}
+			if len(tracker.Voters2) == 0 {
 				return res
 			}
 		}
@@ -253,7 +279,8 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 		return res
 	case voteFilterRequest:
 		e := e0.(voteFilterRequestEvent)
-		eqVote, equivocated := tracker.Equivocators[e.RawVote.Sender]
+		//eqVote, equivocated := tracker.Equivocators[e.RawVote.Sender]
+		eqVote, equivocated := tracker.Equivocators2[e.RawVote.From]
 		if equivocated {
 			equivocationDetails := telemetryspec.EquivocatedVoteEventDetails{
 				VoterAddress:          e.RawVote.Sender.String(),
@@ -270,7 +297,7 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 			return filteredStepEvent{T: voteFilteredStep}
 		}
 
-		v, ok := tracker.Voters[e.RawVote.Sender]
+		v, ok := tracker.Voters2[e.RawVote.From]
 		if ok {
 			if e.RawVote.Proposal == v.R.Proposal {
 				return filteredStepEvent{T: voteFilteredStep}
@@ -278,11 +305,18 @@ func (tracker *voteTracker) handle(r routerHandle, p player, e0 event) event {
 		}
 		return emptyEvent{}
 	case dumpVotesRequest:
-		votes := make([]unauthenticatedVote, 0, len(tracker.Voters)+2*len(tracker.Equivocators))
-		for _, v := range tracker.Voters {
+		//votes := make([]unauthenticatedVote, 0, len(tracker.Voters)+2*len(tracker.Equivocators))
+		votes := make([]unauthenticatedVote, 0, len(tracker.Voters2)+2*len(tracker.Equivocators2))
+		//for _, v := range tracker.Voters {
+		//	votes = append(votes, v.u())
+		//}
+		for _, v := range tracker.Voters2 {
 			votes = append(votes, v.u())
 		}
-		for _, ev := range tracker.Equivocators {
+		//for _, ev := range tracker.Equivocators {
+		//	votes = append(votes, ev.v0().u(), ev.v1().u())
+		//}
+		for _, ev := range tracker.Equivocators2 {
 			votes = append(votes, ev.v0().u(), ev.v1().u())
 		}
 
@@ -334,9 +368,14 @@ func (tracker *voteTracker) genBundle(proto config.ConsensusParams, proposalVote
 
 	// pack equivocation votes into the bundle
 	// similarly to regular votes, we pack them in descending order and stop if we reach a quorum.
-	equiPairs := make([]equivocationVote, len(tracker.Equivocators))
+	//equiPairs := make([]equivocationVote, len(tracker.Equivocators))
+	equiPairs := make([]equivocationVote, len(tracker.Equivocators2))
 	i = 0
-	for _, vPair := range tracker.Equivocators {
+	//for _, vPair := range tracker.Equivocators {
+	//	equiPairs[i] = vPair
+	//	i++
+	//}
+	for _, vPair := range tracker.Equivocators2 {
 		equiPairs[i] = vPair
 		i++
 	}
