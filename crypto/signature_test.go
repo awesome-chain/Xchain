@@ -47,9 +47,9 @@ func TestEcrecover(t *testing.T) {
 func TestVerifySignature(t *testing.T) {
 	prv, _ := GenerateKey()
 	pubBS := FromECDSAPub(&prv.PublicKey)
-	sig0,_ := Sign(testmsg, prv)
+	sig0, _ := Sign(testmsg, prv)
 	ok := VerifySignature(pubBS, testmsg, sig0[:len(sig0)-1])
-	if !ok{
+	if !ok {
 		t.Errorf("err")
 		return
 	}

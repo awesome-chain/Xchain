@@ -29,7 +29,7 @@ type RoundInterval uint64
 // MicroAlgos is our unit of currency.  It is wrapped in a struct to nudge
 // developers to use an overflow-checking library for any arithmetic.
 type MicroAlgos struct {
-	Raw uint64
+	Raw  uint64
 	Raw2 *big.Int
 }
 

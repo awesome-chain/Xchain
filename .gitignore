@@ -1,3 +1,4 @@
-
 *.xml
 *.log
+/.idea/
+/.idea/workspace.xml

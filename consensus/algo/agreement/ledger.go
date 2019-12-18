@@ -102,7 +102,7 @@ func (l *ledger) LookupDigest(r basics.Round) (crypto.Digest, error) {
 	}
 	b := l.chain.GetBlockByNumber(uint64(r))
 	bb := Block{
-		Block:b,
+		Block: b,
 	}
 	return bb.Digest(), nil
 }

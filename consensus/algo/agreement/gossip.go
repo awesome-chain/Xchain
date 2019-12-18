@@ -244,11 +244,10 @@ func (i *networkImplSimulate) Broadcast(t protocol.Tag, data []byte) (err error)
 }
 
 func (i *networkImplSimulate) Relay(h MessageHandle, t protocol.Tag, data []byte) (err error) {
-	msg := network.IncomingMessage{
-	}
+	msg := network.IncomingMessage{}
 	msg.Tag = t
 	msg.Data = data
-	switch msg.Tag{
+	switch msg.Tag {
 	case protocol.AgreementVoteTag:
 		i.voteCh <- Message{MessageHandle: nil, Data: msg.Data}
 	case protocol.ProposalPayloadTag:
@@ -290,4 +289,3 @@ func (i *networkImplSimulate) broadcastTimeout(t protocol.Tag, data []byte, time
 	defer cancel()
 	return i.net.Broadcast(ctx, t, data, true, nil)
 }
-
