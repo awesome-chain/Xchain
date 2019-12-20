@@ -19,6 +19,7 @@ package rawdb
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"math/big"
 
 	"github.com/awesome-chain/Xchain/common"
@@ -204,6 +205,20 @@ func WriteBodyRLP(db DatabaseWriter, hash common.Hash, number uint64, rlp rlp.Ra
 	}
 }
 
+// ReadBodyRLP retrieves the block body (transactions and uncles) in RLP encoding.
+func ReadAlgoCredRLP(db DatabaseReader, hash common.Hash, number uint64) rlp.RawValue {
+	data, _ := db.Get(append(append(credentialPrefix, encodeBlockNumber(number)...), hash.Bytes()...))
+	return data
+}
+
+// WriteBodyRLP stores an RLP encoded block body into the database.
+func WriteAlgoCredRLP(db DatabaseWriter, hash common.Hash, number uint64, rlp rlp.RawValue) {
+	key := append(append(credentialPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
+	if err := db.Put(key, rlp); err != nil {
+		log.Crit("Failed to store credential body", "err", err)
+	}
+}
+
 // HasBody verifies the existence of a block body corresponding to the hash.
 func HasBody(db DatabaseReader, hash common.Hash, number uint64) bool {
 	key := append(append(blockBodyPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
@@ -240,6 +255,36 @@ func WriteBody(db DatabaseWriter, hash common.Hash, number uint64, body *types.B
 func DeleteBody(db DatabaseDeleter, hash common.Hash, number uint64) {
 	if err := db.Delete(append(append(blockBodyPrefix, encodeBlockNumber(number)...), hash.Bytes()...)); err != nil {
 		log.Crit("Failed to delete block body", "err", err)
+	}
+}
+
+// ReadBody retrieves the block body corresponding to the hash.
+func ReadAlgoCred(db DatabaseReader, hash common.Hash, number uint64) *committee.Credential {
+	data := ReadAlgoCredRLP(db, hash, number)
+	if len(data) == 0 {
+		return nil
+	}
+	cred := new(committee.Credential)
+	if err := rlp.Decode(bytes.NewReader(data), cred); err != nil {
+		log.Error("Invalid algo cred RLP", "hash", hash, "err", err)
+		return nil
+	}
+	return cred
+}
+
+// WriteBody storea a block body into the database.
+func WriteAlgoCred(db DatabaseWriter, hash common.Hash, number uint64, cred *committee.Credential) {
+	data, err := rlp.EncodeToBytes(cred)
+	if err != nil {
+		log.Crit("Failed to RLP encode algo cred", "err", err)
+	}
+	WriteAlgoCredRLP(db, hash, number, data)
+}
+
+// DeleteBody removes all block body data associated with a hash.
+func DeleteAlgoCred(db DatabaseDeleter, hash common.Hash, number uint64) {
+	if err := db.Delete(append(append(credentialPrefix, encodeBlockNumber(number)...), hash.Bytes()...)); err != nil {
+		log.Crit("Failed to delete algo cred", "err", err)
 	}
 }
 
@@ -347,6 +392,33 @@ func WriteBlock(db DatabaseWriter, block *types.Block) {
 
 // DeleteBlock removes all block data associated with a hash.
 func DeleteBlock(db DatabaseDeleter, hash common.Hash, number uint64) {
+	DeleteReceipts(db, hash, number)
+	DeleteHeader(db, hash, number)
+	DeleteBody(db, hash, number)
+	DeleteTd(db, hash, number)
+}
+
+func ReadAlgoBundle(db DatabaseReader, hash common.Hash, number uint64) *types.AlgoBundle {
+	header := ReadHeader(db, hash, number)
+	if header == nil {
+		return nil
+	}
+	body := ReadBody(db, hash, number)
+	if body == nil {
+		return nil
+	}
+	cred := ReadAlgoCred(db, hash, number)
+	return types.NewBlockWithHeader(header).WithBody(body.Transactions, body.Uncles).WithCred(cred)
+}
+
+// WriteBlock serializes a block into the database, header and body separately.
+func WriteAlgoBundle(db DatabaseWriter, block *types.Block) {
+	WriteBody(db, block.Hash(), block.NumberU64(), block.Body())
+	WriteHeader(db, block.Header())
+}
+
+// DeleteBlock removes all block data associated with a hash.
+func DeleteALgoBundle(db DatabaseDeleter, hash common.Hash, number uint64) {
 	DeleteReceipts(db, hash, number)
 	DeleteHeader(db, hash, number)
 	DeleteBody(db, hash, number)

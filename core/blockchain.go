@@ -111,11 +111,13 @@ type BlockChain struct {
 	currentBlock     atomic.Value // Current head of the block chain
 	currentFastBlock atomic.Value // Current head of the fast-sync chain (may be above the block chain!)
 
-	stateCache   state.Database // State database to reuse between imports (contains state cache)
-	bodyCache    *lru.Cache     // Cache for the most recent block bodies
-	bodyRLPCache *lru.Cache     // Cache for the most recent block bodies in RLP encoded format
-	blockCache   *lru.Cache     // Cache for the most recent entire blocks
-	futureBlocks *lru.Cache     // future blocks are blocks added for later processing
+	stateCache     state.Database // State database to reuse between imports (contains state cache)
+	bodyCache      *lru.Cache     // Cache for the most recent block bodies
+	bodyRLPCache   *lru.Cache     // Cache for the most recent block bodies in RLP encoded format
+	bundleCache    *lru.Cache     // Cache for the most recent block bodies
+	bundleRLPCache *lru.Cache     // Cache for the most recent block bodies in RLP encoded format
+	blockCache     *lru.Cache     // Cache for the most recent entire blocks
+	futureBlocks   *lru.Cache     // future blocks are blocks added for later processing
 
 	quit    chan struct{} // blockchain quit channel
 	running int32         // running must be called atomically
@@ -533,6 +535,51 @@ func (bc *BlockChain) GetBodyRLP(hash common.Hash) rlp.RawValue {
 	// Cache the found body for next time and return
 	bc.bodyRLPCache.Add(hash, body)
 	return body
+}
+
+// GetBody retrieves a block body (transactions and uncles) from the database by
+// hash, caching it if found.
+func (bc *BlockChain) GetAlgoBundle(hash common.Hash) *types.AlgoBundle {
+	// Short circuit if the body's already in the cache, retrieve otherwise
+	if cached, ok := bc.bundleCache.Get(hash); ok {
+		body := cached.(*types.AlgoBundle)
+		return body
+	}
+	number := bc.hc.GetBlockNumber(hash)
+	if number == nil {
+		return nil
+	}
+	body := rawdb.ReadAlgoBundle(bc.db, hash, *number)
+	if body == nil {
+		return nil
+	}
+	// Cache the found body for next time and return
+	bc.bodyCache.Add(hash, body)
+	return body
+}
+
+// GetBodyRLP retrieves a block body in RLP encoding from the database by hash,
+// caching it if found.
+func (bc *BlockChain) GetAlgoBundleRLP(hash common.Hash) rlp.RawValue {
+	// Short circuit if the body's already in the cache, retrieve otherwise
+	if cached, ok := bc.bundleRLPCache.Get(hash); ok {
+		return cached.(rlp.RawValue)
+	}
+	number := bc.hc.GetBlockNumber(hash)
+	if number == nil {
+		return nil
+	}
+	bundle := rawdb.ReadAlgoBundle(bc.db, hash, *number)
+	if bundle == nil {
+		return nil
+	}
+	bundleRLP, err := rlp.EncodeToBytes(bundle)
+	if err != nil {
+		return nil
+	}
+	// Cache the found body for next time and return
+	bc.bodyRLPCache.Add(hash, bundleRLP)
+	return bundleRLP
 }
 
 // HasBlock checks if a block is fully present in the database or not.
