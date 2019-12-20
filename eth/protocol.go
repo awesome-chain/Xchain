@@ -56,6 +56,8 @@ const (
 	GetBlockBodiesMsg  = 0x05
 	BlockBodiesMsg     = 0x06
 	NewBlockMsg        = 0x07
+	GetAlgoBundlesMsg  = 0x08
+	AlgoBundlesMsg     = 0x09
 
 	// Protocol messages belonging to eth/63
 	GetNodeDataMsg = 0x0d
@@ -181,3 +183,4 @@ type blockBody struct {
 
 // blockBodiesData is the network packet for block content distribution.
 type blockBodiesData []*blockBody
+type AlgoBundles []*types.AlgoBundle

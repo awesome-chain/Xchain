@@ -174,7 +174,8 @@ type networkImplSimulate struct {
 
 // WrapNetwork adapts a network.GossipNode into an agreement.Network.
 func WrapNetworkSimulate(net network.GossipNode) Network {
-	i := new(networkImplSimulate)
+	//i := new(networkImplSimulate)
+	i := new(networkImpl)
 
 	i.voteCh = make(chan Message, voteBufferSize)
 	i.proposalCh = make(chan Message, proposalBufferSize)

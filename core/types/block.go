@@ -19,6 +19,7 @@ package types
 
 import (
 	"encoding/binary"
+	"github.com/awesome-chain/Xchain/consensus/algo/data/committee"
 	"io"
 	"math/big"
 	"sort"
@@ -170,6 +171,11 @@ type Block struct {
 	// inter-peer block relay.
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
+}
+
+type AlgoBundle struct {
+	block *Block
+	cred  *committee.Credential
 }
 
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
@@ -390,6 +396,15 @@ func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 		block.uncles[i] = CopyHeader(uncles[i])
 	}
 	return block
+}
+
+// WithBody returns a new block with the given transaction and uncle contents.
+func (b *Block) WithCred(Cred *committee.Credential) *AlgoBundle {
+	bundle := &AlgoBundle{
+		block: b,
+		cred:  Cred,
+	}
+	return bundle
 }
 
 // Hash returns the keccak256 hash of b's header.

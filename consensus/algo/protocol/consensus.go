@@ -94,6 +94,10 @@ const ConsensusV17 = ConsensusVersion(
 	"https://github.com/algorandfoundation/specs/tree/5615adc36bad610c7f165fa2967f4ecfa75125f0",
 )
 
+const ConsensusVTest = ConsensusVersion(
+	"https://github.com/algorandfoundation/specs/tree/qinxiuchentest",
+)
+
 // ConsensusV18 points to reward calculation spec commit
 const ConsensusV18 = ConsensusVersion(
 	"https://github.com/algorandfoundation/specs/tree/6c6bd668be0ab14098e51b37e806c509f7b7e31f",
@@ -111,8 +115,8 @@ const ConsensusFuture = ConsensusVersion(
 
 // ConsensusCurrentVersion is the latest version and should be used
 // when a specific version is not provided.
-const ConsensusCurrentVersion = ConsensusV17
-
+//const ConsensusCurrentVersion = ConsensusV17
+const ConsensusCurrentVersion = ConsensusVTest
 // ConsensusTest0 is a version of ConsensusV0 used for testing
 // (it has different approved upgrade paths).
 const ConsensusTest0 = ConsensusVersion("test0")

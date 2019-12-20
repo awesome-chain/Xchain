@@ -274,6 +274,17 @@ func (p *peer) SendBlockBodiesRLP(bodies []rlp.RawValue) error {
 	return p2p.Send(p.rw, BlockBodiesMsg, bodies)
 }
 
+// SendBlockBodies sends a batch of block contents to the remote peer.
+func (p *peer) SendAlgoBundles(bundles []*types.AlgoBundle) error {
+	return p2p.Send(p.rw, AlgoBundlesMsg, AlgoBundles(bundles))
+}
+
+// SendBlockBodiesRLP sends a batch of block contents to the remote peer from
+// an already RLP encoded format.
+func (p *peer) SendALgoBundlesRLP(bodies []rlp.RawValue) error {
+	return p2p.Send(p.rw, AlgoBundlesMsg, bodies)
+}
+
 // SendNodeDataRLP sends a batch of arbitrary internal data, corresponding to the
 // hashes requested.
 func (p *peer) SendNodeData(data [][]byte) error {
