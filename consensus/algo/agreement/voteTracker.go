@@ -44,7 +44,7 @@ type proposalVoteCounter struct {
 type voteTracker struct {
 	// Voters holds the set of voters which have voted in the current step.
 	// It is used to track whether a voter has equivocated.
-	Voters map[basics.Address]vote
+	Voters  map[basics.Address]vote
 	Voters2 map[common.Address]vote
 
 	// Counts holds the weighted sum of the votes for a given proposal.
@@ -56,7 +56,7 @@ type voteTracker struct {
 	// Equivocators holds the set of voters which have already equivocated
 	// once.  Future votes from these voters are dropped and not
 	// propagated.
-	Equivocators map[basics.Address]equivocationVote
+	Equivocators  map[basics.Address]equivocationVote
 	Equivocators2 map[common.Address]equivocationVote
 
 	// EquivocatorsCount holds the number of equivocating votes which count

@@ -117,6 +117,7 @@ const ConsensusFuture = ConsensusVersion(
 // when a specific version is not provided.
 //const ConsensusCurrentVersion = ConsensusV17
 const ConsensusCurrentVersion = ConsensusVTest
+
 // ConsensusTest0 is a version of ConsensusV0 used for testing
 // (it has different approved upgrade paths).
 const ConsensusTest0 = ConsensusVersion("test0")

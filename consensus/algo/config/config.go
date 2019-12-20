@@ -412,7 +412,6 @@ func initConsensusProtocols() {
 	vTest.DownCommitteeThreshold = 1
 	Consensus[protocol.ConsensusVTest] = vTest
 
-
 	// v17 can be upgraded to v18.
 	// for now, I will leave this gated out.
 	// v17.ApprovedUpgrades[protocol.ConsensusV18] = true

@@ -71,7 +71,7 @@ type proposalTracker struct {
 	// Duplicate holds the set of senders which has been seen by the
 	// proposalTracker.  A duplicate proposal-vote or an equivocating
 	// proposal-vote is dropped by a proposalTracker.
-	Duplicate map[basics.Address]bool
+	Duplicate  map[basics.Address]bool
 	Duplicate2 map[common.Address]bool
 	// Freezer holds a proposalSeeker, which seeks the proposal-vote with
 	// the lowest credential seen by the proposalTracker.
@@ -128,7 +128,7 @@ func (t *proposalTracker) handle(r routerHandle, p player, e event) event {
 		//	return filteredEvent{T: voteFiltered, Err: makeSerErr(err)}
 		//}
 		if t.Duplicate2[v.From] {
-			err := errProposalTrackerSenderDup{From:v.From, Sender: v.Sender, Round: v.Round, Period: v.Period}
+			err := errProposalTrackerSenderDup{From: v.From, Sender: v.Sender, Round: v.Round, Period: v.Period}
 			return filteredEvent{T: voteFiltered, Err: makeSerErr(err)}
 		}
 		return emptyEvent{}
@@ -149,7 +149,7 @@ func (t *proposalTracker) handle(r routerHandle, p player, e event) event {
 		//}
 		//t.Duplicate[v.R.Sender] = true
 		if t.Duplicate2[v.R.From] {
-			err := errProposalTrackerSenderDup{From:v.R.From, Sender: v.R.Sender, Round: v.R.Round, Period: v.R.Period}
+			err := errProposalTrackerSenderDup{From: v.R.From, Sender: v.R.Sender, Round: v.R.Round, Period: v.R.Period}
 			return filteredEvent{T: voteFiltered, Err: makeSerErr(err)}
 		}
 		t.Duplicate2[v.R.From] = true
@@ -216,7 +216,7 @@ func (err errProposalSeekerNotLess) Error() string {
 }
 
 type errProposalTrackerSenderDup struct {
-	From common.Address
+	From   common.Address
 	Sender basics.Address
 	Round  round
 	Period period
