@@ -55,7 +55,11 @@ func enableTelemetryState(telemetry *telemetryState, l *logger) {
 func makeTelemetryState(cfg TelemetryConfig, hookFactory hookFactory) (*telemetryState, error) {
 	history := createLogBuffer(cfg.LogHistoryDepth)
 	if cfg.SessionGUID == "" {
-		cfg.SessionGUID = uuid.NewV4().String()
+		uuid, err := uuid.NewV4()
+		if err != nil {
+			return nil, err
+		}
+		cfg.SessionGUID = uuid.String()
 	}
 	hook, err := createTelemetryHook(cfg, history, hookFactory)
 	if err != nil {

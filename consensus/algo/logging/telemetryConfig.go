@@ -61,10 +61,10 @@ func TelemetryOverride(env string) bool {
 //       a "dev" branch check.
 func createTelemetryConfig() TelemetryConfig {
 	enable := false
-
+	uuid, _ := uuid.NewV4()
 	return TelemetryConfig{
 		Enable:             enable,
-		GUID:               uuid.NewV4().String(),
+		GUID:               uuid.String(),
 		URI:                elasticsearchEndpoint(),
 		MinLogLevel:        logrus.WarnLevel,
 		ReportHistoryLevel: logrus.WarnLevel,
